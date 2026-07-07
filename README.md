@@ -35,7 +35,50 @@ npm run dev
 4. Deploy.
 
 ## Belum termasuk di versi ini
-Notifikasi email ke ketua Mulmed & Pubinfo saat ada request baru. Ini butuh setup tambahan (Supabase Edge Function + layanan email kayak Resend, butuh API key terpisah). Bilang aja kalau mau lanjut ke bagian ini.
+~~Notifikasi email~~ → sudah ada, lihat bagian "Setup Notifikasi Email" di bawah.
+
+## Setup Notifikasi Email (Request Baru → Ketua Mulmed & Pubinfo)
+
+### 1. Siapkan akun Gmail pengirim
+1. Pakai akun Gmail (bisa akun baru khusus buat ini, atau akun pribadi).
+2. Aktifkan **2-Step Verification**: myaccount.google.com/security.
+3. Bikin **App Password**: myaccount.google.com/apppasswords → pilih app "Mail" → generate → copy 16 digit passwordnya (beda sama password Gmail biasa).
+
+### 2. Install Supabase CLI (kalau belum ada)
+```
+npm install -g supabase
+supabase login
+```
+
+### 3. Link project & deploy function
+Di folder root project:
+```
+supabase link --project-ref owoftqxjnstjyrinrdiz
+supabase functions deploy notify-new-request --no-verify-jwt
+```
+
+### 4. Set secrets (isi sesuai punya lo)
+```
+supabase secrets set GMAIL_USER=emailpengirim@gmail.com
+supabase secrets set GMAIL_APP_PASSWORD=16digitapppassword
+supabase secrets set ADMIN_EMAIL_MULMED=emailketuamulmed@gmail.com
+supabase secrets set ADMIN_EMAIL_PUBINFO=emailketuapubinfo@gmail.com
+supabase secrets set WEBHOOK_SECRET=bikinstringrandomsendiribuatpassword
+```
+
+### 5. Bikin Database Webhook di Dashboard
+1. Dashboard Supabase → **Database** → **Webhooks** → **Create a new hook**
+2. Name: `notify-new-request`
+3. Table: `posts`
+4. Events: centang **Insert** aja
+5. Type: **Supabase Edge Functions**
+6. Edge Function: pilih `notify-new-request`
+7. HTTP Headers: tambah header `x-webhook-secret` = (nilai yang sama persis dengan `WEBHOOK_SECRET` di step 4)
+8. Save
+
+### 6. Testing
+Login pakai salah satu akun bidang, submit request baru → cek inbox 2 email ketua (cek folder spam juga kalau belum masuk).
+
 
 ## Catatan Keamanan
 Hak akses (bidang cuma bisa insert, admin bisa update/delete) dikunci lewat Row Level Security di database — bukan cuma disembunyikan di tampilan. Jadi walau ada yang coba akses API langsung, aturannya tetap berlaku.
