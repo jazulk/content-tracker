@@ -122,6 +122,9 @@ export default function CalendarView({ posts, profile, onCardClick }) {
                           </div>
                           <span className="platform-badge" style={{ background: pc.s, color: pc.c }}>{p.platform}</span>
                           <span className="platform-badge" style={{ background: st.color + "22", color: st.color, marginLeft: 6 }}>{p.status}</span>
+                          {p.requested_by_name && (
+                            <span className="requester-badge" style={{ marginLeft: 6 }}>dari {p.requested_by_name}</span>
+                          )}
                         </div>
                       );
                     })}
