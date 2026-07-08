@@ -27,8 +27,6 @@ Deno.serve(async (req) => {
   const payload = await req.json();
   const record = payload.record;
 
-  console.log("DEBUG ADMIN_EMAILS resolved to:", JSON.stringify(ADMIN_EMAILS));
-
   if (!record?.requested_by) {
     return new Response("skip: no requester", { status: 200 });
   }
@@ -45,7 +43,7 @@ Deno.serve(async (req) => {
   }
 
   const subject = `[Content Tracker] Request baru dari ${profile.bidang_name}`;
-  const body = `
+  const textBody = `
 Ada request konten baru masuk dari bidang ${profile.bidang_name}.
 
 Judul       : ${record.title}
@@ -57,6 +55,31 @@ Link Sumber : ${record.source_link || "-"}
 
 Buka Content Tracker buat ditindaklanjuti.
 `.trim();
+
+  function escapeHtml(s) {
+    return String(s || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+  const sourceLinksHtml = (record.source_link || "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((l) => `<a href="${escapeHtml(l)}">${escapeHtml(l)}</a>`)
+    .join("<br/>") || "-";
+
+  const htmlBody = `
+  <div style="font-family:Arial,sans-serif;font-size:14px;color:#1E1B3A;">
+    <p>Ada request konten baru masuk dari bidang <b>${escapeHtml(profile.bidang_name)}</b>.</p>
+    <table cellpadding="4" cellspacing="0" style="border-collapse:collapse;">
+      <tr><td style="color:#6E6892;">Judul</td><td>: <b>${escapeHtml(record.title)}</b></td></tr>
+      <tr><td style="color:#6E6892;">Platform</td><td>: ${escapeHtml(record.platform)}</td></tr>
+      <tr><td style="color:#6E6892;vertical-align:top;">Tgl Posting</td><td>: ${escapeHtml(record.post_date || "-")} ${escapeHtml(record.post_time || "")}</td></tr>
+      <tr><td style="color:#6E6892;">PIC</td><td>: ${escapeHtml(record.pic || "-")}</td></tr>
+      <tr><td style="color:#6E6892;vertical-align:top;">Catatan</td><td>: ${escapeHtml(record.caption || "-")}</td></tr>
+      <tr><td style="color:#6E6892;vertical-align:top;">Link Sumber</td><td>: ${sourceLinksHtml}</td></tr>
+    </table>
+    <p style="margin-top:16px;">Buka Content Tracker buat ditindaklanjuti.</p>
+  </div>
+  `.trim();
 
   try {
     const client = new SMTPClient({
@@ -75,7 +98,8 @@ Buka Content Tracker buat ditindaklanjuti.
       from: GMAIL_USER,
       to: ADMIN_EMAILS,
       subject,
-      content: body,
+      content: textBody,
+      html: htmlBody,
     });
 
     await client.close();
