@@ -83,6 +83,7 @@ export default function App() {
         post_time: form.post_time || null,
         pic: form.pic,
         caption: form.caption,
+        source_link: form.source_link,
       });
       if (error) alert("Gagal menyimpan: " + error.message);
     }
@@ -137,7 +138,7 @@ export default function App() {
     <>
       <div className="hero">
         <div className="hero-inner">
-          <p className="eyebrow">Medinfo · BEM FIK</p>
+          <p className="eyebrow">Medfo · BEM FIK</p>
           <h1 className="pagetitle display">Content Tracker 🎨</h1>
           <p className="sub">Alur konten dari ide sampe tayang, tanpa scroll spreadsheet lagi</p>
           <div className="topbar">

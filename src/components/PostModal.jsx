@@ -49,7 +49,7 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
   }
 
   return (
-    <div className="overlay" onClick={(e) => e.target.classList.contains("overlay") && onClose()}>
+    <div className="overlay">
       <div className="modal">
         <h2>{editingPost ? "Edit Postingan" : isAdmin ? "Tambah Postingan" : "Request Postingan"}</h2>
         <form onSubmit={handleSubmit}>
@@ -109,12 +109,12 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
             />
           </div>
           <div className="field">
-            <label>Link Sumber (Gdrive/File)</label>
-            <input
-              type="url"
+            <label>Link Sumber — Gdrive / Docs / Spreadsheet (satu link per baris, boleh lebih dari satu)</label>
+            <textarea
               value={form.source_link}
               onChange={(e) => set("source_link", e.target.value)}
-              placeholder="https://drive.google.com/..."
+              placeholder={"https://drive.google.com/...\nhttps://docs.google.com/..."}
+              style={{ minHeight: 56 }}
             />
           </div>
           {isAdmin && form.status === "Ditolak" && (

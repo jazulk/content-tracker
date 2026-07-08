@@ -89,15 +89,24 @@ export default function Board({ posts, profile, onCardClick, onDelete, onDropSta
                         <div className="rejection-note">Alasan: {p.rejection_note}</div>
                       )}
                       {p.source_link && (
-                        <a
-                          href={p.source_link}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          style={{ fontSize: 11, color: "var(--violet)", fontWeight: 700, display: "inline-block", marginTop: 6 }}
-                        >
-                          📎 Buka sumber
-                        </a>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 3, marginTop: 6 }}>
+                          {p.source_link
+                            .split("\n")
+                            .map((l) => l.trim())
+                            .filter(Boolean)
+                            .map((link, i) => (
+                              <a
+                                key={i}
+                                href={link}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                style={{ fontSize: 11, color: "var(--violet)", fontWeight: 700 }}
+                              >
+                                📎 Buka link {i + 1}
+                              </a>
+                            ))}
+                        </div>
                       )}
                       <div className="card-foot">
                         <span className="pic-badge" title={p.pic || ""}>

@@ -17,6 +17,7 @@ create table if not exists profiles (
 
 alter table profiles enable row level security;
 
+drop policy if exists "profiles_select_all_authenticated" on profiles;
 create policy "profiles_select_all_authenticated"
   on profiles for select
   to authenticated
@@ -35,6 +36,7 @@ create table if not exists posts (
   post_time time,
   pic text,
   caption text,
+  source_link text,
   rejection_note text,
   requested_by uuid references profiles(id),
   requested_by_name text,
@@ -45,6 +47,7 @@ create table if not exists posts (
 alter table posts enable row level security;
 
 -- Semua akun yang login (admin & bidang) bisa lihat SEMUA postingan
+drop policy if exists "posts_select_all_authenticated" on posts;
 create policy "posts_select_all_authenticated"
   on posts for select
   to authenticated
@@ -53,23 +56,36 @@ create policy "posts_select_all_authenticated"
 -- Semua akun yang login boleh insert (request baru).
 -- Nilai requested_by, requested_by_name, dan status di-force oleh trigger di bawah,
 -- jadi client tidak bisa menitipkan status lain lewat request body.
+drop policy if exists "posts_insert_authenticated" on posts;
 create policy "posts_insert_authenticated"
   on posts for insert
   to authenticated
   with check (true);
 
--- Hanya admin yang boleh update (ubah status, edit, dsb)
-create policy "posts_update_admin_only"
+-- Admin boleh update semua. Bidang boleh update HANYA postingan miliknya sendiri
+-- (status tetap dikunci lewat trigger di bawah, terlepas dari policy ini).
+drop policy if exists "posts_update_admin_only" on posts;
+create policy "posts_update_own_or_admin"
   on posts for update
   to authenticated
-  using (exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin'))
-  with check (exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin'));
+  using (
+    exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin')
+    or requested_by = auth.uid()
+  )
+  with check (
+    exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin')
+    or requested_by = auth.uid()
+  );
 
--- Hanya admin yang boleh delete
-create policy "posts_delete_admin_only"
+-- Admin boleh delete semua. Bidang boleh delete HANYA postingan miliknya sendiri.
+drop policy if exists "posts_delete_admin_only" on posts;
+create policy "posts_delete_own_or_admin"
   on posts for delete
   to authenticated
-  using (exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin'));
+  using (
+    exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin')
+    or requested_by = auth.uid()
+  );
 
 -- ---------- TRIGGER: kunci requested_by & status saat insert ----------
 create or replace function enforce_post_insert()
@@ -119,3 +135,31 @@ drop trigger if exists trg_posts_updated_at on posts;
 create trigger trg_posts_updated_at
   before update on posts
   for each row execute function set_updated_at();
+
+-- ---------- TRIGGER: kunci status saat bidang edit postingan sendiri ----------
+create or replace function enforce_post_update()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_role text;
+begin
+  select role into v_role from profiles where id = auth.uid();
+
+  if v_role <> 'admin' then
+    new.status := old.status;
+    new.rejection_note := old.rejection_note;
+    new.requested_by := old.requested_by;
+    new.requested_by_name := old.requested_by_name;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_enforce_post_update on posts;
+create trigger trg_enforce_post_update
+  before update on posts
+  for each row execute function enforce_post_update();

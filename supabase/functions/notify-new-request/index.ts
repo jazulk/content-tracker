@@ -7,8 +7,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const GMAIL_USER = Deno.env.get("GMAIL_USER")!;
 const GMAIL_APP_PASSWORD = Deno.env.get("GMAIL_APP_PASSWORD")!;
-const ADMIN_EMAIL_MULMED = Deno.env.get("ADMIN_EMAIL_MULMED")!;
-const ADMIN_EMAIL_PUBINFO = Deno.env.get("ADMIN_EMAIL_PUBINFO")!;
+const ADMIN_EMAILS = (Deno.env.get("ADMIN_EMAILS") || "")
+  .split(",")
+  .map((e) => e.trim())
+  .filter(Boolean);
 const WEBHOOK_SECRET = Deno.env.get("WEBHOOK_SECRET")!;
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -69,7 +71,7 @@ Buka Content Tracker buat ditindaklanjuti.
 
     await client.send({
       from: GMAIL_USER,
-      to: [ADMIN_EMAIL_MULMED, ADMIN_EMAIL_PUBINFO],
+      to: ADMIN_EMAILS,
       subject,
       content: body,
     });

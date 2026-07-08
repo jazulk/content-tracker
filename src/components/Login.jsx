@@ -24,7 +24,7 @@ export default function Login() {
     <div className="login-screen">
       <div className="login-card">
         <h1 className="display">Content Tracker</h1>
-        <p>Medinfo BEM FIK — masuk pakai akun bidang/admin kamu</p>
+        <p>Medfo BEM FIK — masuk pakai akun bidang/admin kamu</p>
         <form onSubmit={handleSubmit}>
           <input
             type="text"
