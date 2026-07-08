@@ -2,7 +2,7 @@
 // Dipanggil otomatis oleh Database Webhook tiap ada INSERT ke tabel `posts`.
 // Kalau yang insert adalah akun bidang (request baru), kirim email ke ketua Mulmed & Pubinfo.
 
-import { SmtpClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const GMAIL_USER = Deno.env.get("GMAIL_USER")!;
@@ -55,12 +55,16 @@ Buka Content Tracker buat ditindaklanjuti.
 `.trim();
 
   try {
-    const client = new SmtpClient();
-    await client.connect({
-      hostname: "smtp.gmail.com",
-      port: 465,
-      username: GMAIL_USER,
-      password: GMAIL_APP_PASSWORD,
+    const client = new SMTPClient({
+      connection: {
+        hostname: "smtp.gmail.com",
+        port: 465,
+        tls: true,
+        auth: {
+          username: GMAIL_USER,
+          password: GMAIL_APP_PASSWORD,
+        },
+      },
     });
 
     await client.send({
