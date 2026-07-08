@@ -61,7 +61,8 @@ supabase functions deploy notify-new-request --no-verify-jwt
 ```
 supabase secrets set GMAIL_USER=emailpengirim@gmail.com
 supabase secrets set GMAIL_APP_PASSWORD=16digitapppassword
-supabase secrets set ADMIN_EMAIL_MEDFO=emailtarget@gmail.com
+supabase secrets set ADMIN_EMAIL_MULMED=emailketuamulmed@gmail.com
+supabase secrets set ADMIN_EMAIL_PUBINFO=emailketuapubinfo@gmail.com
 supabase secrets set WEBHOOK_SECRET=bikinstringrandomsendiribuatpassword
 ```
 

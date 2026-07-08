@@ -1,10 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
+import * as XLSX from "xlsx";
 import { supabase } from "./supabaseClient";
 import Login from "./components/Login";
 import Board from "./components/Board";
 import CalendarView from "./components/CalendarView";
+import ArchiveView from "./components/ArchiveView";
 import PostModal from "./components/PostModal";
-import { PLATFORM_COLORS, STAT_GRADIENTS } from "./constants";
+import { PLATFORM_COLORS, STAT_GRADIENTS, STATUSES, isArchived } from "./constants";
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -16,6 +18,8 @@ export default function App() {
   const [view, setView] = useState("board");
   const [search, setSearch] = useState("");
   const [platformFilter, setPlatformFilter] = useState(null);
+  const [statusFilter, setStatusFilter] = useState(null);
+  const [bidangFilter, setBidangFilter] = useState(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
@@ -113,6 +117,8 @@ export default function App() {
   const filteredPosts = useMemo(() => {
     return posts.filter((p) => {
       if (platformFilter && p.platform !== platformFilter) return false;
+      if (statusFilter && p.status !== statusFilter) return false;
+      if (bidangFilter && p.requested_by_name !== bidangFilter) return false;
       if (search) {
         const q = search.toLowerCase();
         const hay = `${p.title} ${p.caption || ""} ${p.pic || ""}`.toLowerCase();
@@ -120,7 +126,39 @@ export default function App() {
       }
       return true;
     });
-  }, [posts, platformFilter, search]);
+  }, [posts, platformFilter, statusFilter, bidangFilter, search]);
+
+  const bidangList = useMemo(() => {
+    const set = new Set(posts.map((p) => p.requested_by_name).filter(Boolean));
+    return Array.from(set).sort();
+  }, [posts]);
+
+  const archivedPosts = useMemo(() => filteredPosts.filter(isArchived), [filteredPosts]);
+
+  function handleExport() {
+    const rows = filteredPosts.map((p) => ({
+      Judul: p.title,
+      Platform: p.platform,
+      Status: p.status,
+      "Bidang Pengaju": p.requested_by_name || "-",
+      "Tgl Diajukan": p.submit_date || "-",
+      "Tgl Posting": p.post_date || "-",
+      "Jam Posting": p.post_time || "-",
+      PIC: p.pic || "-",
+      Caption: p.caption || "-",
+      "Link Sumber": p.source_link || "-",
+      "Alasan Ditolak": p.rejection_note || "-",
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws["!cols"] = [
+      { wch: 30 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 12 },
+      { wch: 12 }, { wch: 10 }, { wch: 14 }, { wch: 40 }, { wch: 30 }, { wch: 20 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Content Tracker");
+    const today = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `content-tracker-${today}.xlsx`);
+  }
 
   const byPlatform = useMemo(() => {
     const m = {};
@@ -145,12 +183,16 @@ export default function App() {
             <div className="seg">
               <button className={view === "board" ? "active" : ""} onClick={() => setView("board")}>📋 Papan</button>
               <button className={view === "cal" ? "active" : ""} onClick={() => setView("cal")}>📅 Kalender</button>
+              <button className={view === "archive" ? "active" : ""} onClick={() => setView("archive")}>🗄️ Arsip</button>
             </div>
             <div className="actions">
               <span className="role-badge">{isAdmin ? `🛠️ ${profile.bidang_name}` : `📨 ${profile.bidang_name}`}</span>
               <button className="btn-primary" onClick={() => { setEditingPost(null); setModalOpen(true); }}>
                 {isAdmin ? "+ Tambah Postingan" : "+ Request Postingan"}
               </button>
+              {isAdmin && (
+                <button className="logout-btn" onClick={handleExport} title="Export ke Excel">⬇️ Export</button>
+              )}
               <button className="logout-btn" onClick={handleLogout}>Keluar</button>
             </div>
           </div>
@@ -179,11 +221,31 @@ export default function App() {
             <input type="text" placeholder="Cari judul, caption, atau PIC..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button className={`chip ${!platformFilter ? "active" : ""}`} onClick={() => setPlatformFilter(null)}>Semua</button>
+            <button className={`chip ${!platformFilter ? "active" : ""}`} onClick={() => setPlatformFilter(null)}>Semua Platform</button>
             {Object.keys(PLATFORM_COLORS).map((pl) => (
               <button key={pl} className={`chip ${platformFilter === pl ? "active" : ""}`} onClick={() => setPlatformFilter(pl)}>{pl}</button>
             ))}
           </div>
+        </div>
+        <div className="filterrow">
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button className={`chip ${!statusFilter ? "active" : ""}`} onClick={() => setStatusFilter(null)}>Semua Status</button>
+            {STATUSES.map((s) => (
+              <button key={s.key} className={`chip ${statusFilter === s.key ? "active" : ""}`} onClick={() => setStatusFilter(s.key)}>{s.key}</button>
+            ))}
+          </div>
+          {bidangList.length > 0 && (
+            <select
+              value={bidangFilter || ""}
+              onChange={(e) => setBidangFilter(e.target.value || null)}
+              style={{ border: "2px solid var(--line)", borderRadius: 12, padding: "8px 12px", fontSize: 12.5, fontWeight: 700, color: "var(--ink-soft)", background: "var(--card)" }}
+            >
+              <option value="">Semua Bidang</option>
+              {bidangList.map((b) => (
+                <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         {loadingPosts ? (
@@ -196,11 +258,18 @@ export default function App() {
             onDelete={handleDelete}
             onDropStatus={handleDropStatus}
           />
-        ) : (
+        ) : view === "cal" ? (
           <CalendarView
             posts={filteredPosts}
             profile={profile}
             onCardClick={(p) => { setEditingPost(p); setModalOpen(true); }}
+          />
+        ) : (
+          <ArchiveView
+            posts={archivedPosts}
+            profile={profile}
+            onCardClick={(p) => { setEditingPost(p); setModalOpen(true); }}
+            onDelete={handleDelete}
           />
         )}
       </div>

@@ -1,4 +1,4 @@
-import { STATUSES, PLATFORM_COLORS, formatDateShort } from "../constants";
+import { STATUSES, PLATFORM_COLORS, formatDateShort, isOverdue, sortByPostDate, isArchived } from "../constants";
 
 export default function Board({ posts, profile, onCardClick, onDelete, onDropStatus }) {
   const isAdmin = profile.role === "admin";
@@ -16,7 +16,7 @@ export default function Board({ posts, profile, onCardClick, onDelete, onDropSta
   return (
     <div className="board">
       {STATUSES.map((st) => {
-        const items = posts.filter((p) => p.status === st.key);
+        const items = sortByPostDate(posts.filter((p) => p.status === st.key && !isArchived(p)));
         return (
           <div className="col" key={st.key}>
             <div className="col-head">
@@ -43,15 +43,21 @@ export default function Board({ posts, profile, onCardClick, onDelete, onDropSta
                   const initials = (p.pic || "?").trim().slice(0, 2).toUpperCase();
                   const isOwner = p.requested_by === profile.id;
                   const canModify = isAdmin || isOwner;
+                  const overdue = isOverdue(p);
                   return (
                     <div
                       key={p.id}
                       className="card"
                       draggable={isAdmin}
                       onDragStart={(e) => handleDragStart(e, p.id)}
-                      style={{ borderLeftColor: st.color, cursor: canModify ? "pointer" : "default" }}
+                      style={{ borderLeftColor: overdue ? "#FF3B3B" : st.color, cursor: canModify ? "pointer" : "default" }}
                       onClick={() => canModify && onCardClick(p)}
                     >
+                      {overdue && (
+                        <div style={{ fontSize: 10, fontWeight: 800, color: "#FF3B3B", marginBottom: 6 }}>
+                          ⚠️ TERLAMBAT
+                        </div>
+                      )}
                       {canModify && (
                         <button
                           className="del-btn"
@@ -118,6 +124,11 @@ export default function Board({ posts, profile, onCardClick, onDelete, onDropSta
                 })
               )}
             </div>
+            {st.key === "Posted" && posts.some((p) => p.status === "Posted" && isArchived(p)) && (
+              <div style={{ fontSize: 10.5, color: "var(--ink-soft)", textAlign: "center", marginTop: 8 }}>
+                Ada postingan lama di tab 🗄️ Arsip
+              </div>
+            )}
           </div>
         );
       })}

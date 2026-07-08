@@ -26,6 +26,32 @@ export function formatDateShort(dstr) {
   return d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
 }
 
-export function escapeText(s) {
-  return s || "";
+export const ARCHIVE_AFTER_DAYS = 30;
+
+export function isArchived(post) {
+  if (post.status !== "Posted" || !post.post_date) return false;
+  const cutoff = new Date();
+  cutoff.setHours(0, 0, 0, 0);
+  cutoff.setDate(cutoff.getDate() - ARCHIVE_AFTER_DAYS);
+  const postDate = new Date(post.post_date + "T00:00:00");
+  return postDate < cutoff;
+}
+export function isOverdue(post) {
+  if (!post.post_date) return false;
+  if (post.status === "Posted" || post.status === "Ditolak") return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const postDate = new Date(post.post_date + "T00:00:00");
+  return postDate < today;
+}
+
+export function sortByPostDate(posts) {
+  return [...posts].sort((a, b) => {
+    if (!a.post_date && !b.post_date) return 0;
+    if (!a.post_date) return 1;
+    if (!b.post_date) return -1;
+    const cmp = a.post_date.localeCompare(b.post_date);
+    if (cmp !== 0) return cmp;
+    return (a.post_time || "").localeCompare(b.post_time || "");
+  });
 }
