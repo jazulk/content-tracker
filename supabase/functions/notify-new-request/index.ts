@@ -27,6 +27,8 @@ Deno.serve(async (req) => {
   const payload = await req.json();
   const record = payload.record;
 
+  console.log("DEBUG ADMIN_EMAILS resolved to:", JSON.stringify(ADMIN_EMAILS));
+
   if (!record?.requested_by) {
     return new Response("skip: no requester", { status: 200 });
   }
