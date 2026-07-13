@@ -109,7 +109,7 @@ export default function Board({ posts, profile, onCardClick, onDelete, onDropSta
                                 onClick={(e) => e.stopPropagation()}
                                 style={{ fontSize: 11, color: "var(--violet)", fontWeight: 700 }}
                               >
-                                Buka link {i + 1}
+                                Lihat Sumber{p.source_link.split("\n").filter((l) => l.trim()).length > 1 ? ` ${i + 1}` : ""}
                               </a>
                             ))}
                         </div>

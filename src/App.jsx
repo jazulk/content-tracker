@@ -219,25 +219,22 @@ export default function App() {
           <div className="search">
             <input type="text" placeholder="Cari judul, caption, atau PIC..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button className={`chip ${!platformFilter ? "active" : ""}`} onClick={() => setPlatformFilter(null)}>Semua Platform</button>
-            {Object.keys(PLATFORM_COLORS).map((pl) => (
-              <button key={pl} className={`chip ${platformFilter === pl ? "active" : ""}`} onClick={() => setPlatformFilter(pl)}>{pl}</button>
-            ))}
-          </div>
         </div>
-        <div className="filterrow">
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button className={`chip ${!statusFilter ? "active" : ""}`} onClick={() => setStatusFilter(null)}>Semua Status</button>
-            {STATUSES.map((s) => (
-              <button key={s.key} className={`chip ${statusFilter === s.key ? "active" : ""}`} onClick={() => setStatusFilter(s.key)}>{s.key}</button>
-            ))}
-          </div>
+        <div className="filterrow" style={{ rowGap: 8 }}>
+          <button className={`chip ${!platformFilter ? "active" : ""}`} onClick={() => setPlatformFilter(null)}>Semua Platform</button>
+          {Object.keys(PLATFORM_COLORS).map((pl) => (
+            <button key={pl} className={`chip ${platformFilter === pl ? "active" : ""}`} onClick={() => setPlatformFilter(pl)}>{pl}</button>
+          ))}
+          <span style={{ width: 1, alignSelf: "stretch", background: "var(--line)", margin: "0 4px" }} />
+          <button className={`chip ${!statusFilter ? "active" : ""}`} onClick={() => setStatusFilter(null)}>Semua Status</button>
+          {STATUSES.map((s) => (
+            <button key={s.key} className={`chip ${statusFilter === s.key ? "active" : ""}`} onClick={() => setStatusFilter(s.key)}>{s.key}</button>
+          ))}
           {bidangList.length > 0 && (
             <select
               value={bidangFilter || ""}
               onChange={(e) => setBidangFilter(e.target.value || null)}
-              style={{ border: "2px solid var(--line)", borderRadius: 12, padding: "8px 12px", fontSize: 12.5, fontWeight: 700, color: "var(--ink-soft)", background: "var(--card)" }}
+              style={{ marginLeft: "auto", border: "1.5px solid var(--line)", borderRadius: 10, padding: "7px 12px", fontSize: 12.5, fontWeight: 600, color: "var(--ink-soft)", background: "var(--card)" }}
             >
               <option value="">Semua Bidang</option>
               {bidangList.map((b) => (
