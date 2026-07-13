@@ -4,7 +4,7 @@ import { STATUSES } from "../constants";
 const emptyForm = {
   title: "",
   platform: "Instagram",
-  status: "Ide",
+  status: "Request",
   post_date: "",
   post_time: "",
   pic: "",
@@ -22,7 +22,7 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
       setForm({
         title: editingPost.title || "",
         platform: editingPost.platform || "Instagram",
-        status: editingPost.status || "Ide",
+        status: editingPost.status || "Request",
         post_date: editingPost.post_date || "",
         post_time: editingPost.post_time || "",
         pic: editingPost.pic || "",
@@ -45,6 +45,28 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
       alert("Judul postingan wajib diisi ya");
       return;
     }
+
+    if (!isAdmin && !editingPost) {
+      const now = new Date();
+      const hour = now.getHours();
+      if (hour < 8 || hour >= 21) {
+        alert("Request cuma bisa diajukan jam 08:00 - 21:00 WIB.");
+        return;
+      }
+      if (!form.post_date) {
+        alert("Tanggal posting wajib diisi ya.");
+        return;
+      }
+      const minDate = new Date();
+      minDate.setHours(0, 0, 0, 0);
+      minDate.setDate(minDate.getDate() + 5);
+      const chosenDate = new Date(form.post_date + "T00:00:00");
+      if (chosenDate < minDate) {
+        alert("Request cuma bisa diajukan minimal H-5 dari tanggal posting.");
+        return;
+      }
+    }
+
     onSave(form);
   }
 

@@ -177,21 +177,21 @@ export default function App() {
       <div className="hero">
         <div className="hero-inner">
           <p className="eyebrow">Medfo · BEM FIK</p>
-          <h1 className="pagetitle display">Content Tracker 🎨</h1>
-          <p className="sub">Alur konten dari ide sampe tayang, tanpa scroll spreadsheet lagi</p>
+          <h1 className="pagetitle display">Content Tracker</h1>
+          <p className="sub">Pelacakan dan penjadwalan konten media sosial Medfo</p>
           <div className="topbar">
             <div className="seg">
-              <button className={view === "board" ? "active" : ""} onClick={() => setView("board")}>📋 Papan</button>
-              <button className={view === "cal" ? "active" : ""} onClick={() => setView("cal")}>📅 Kalender</button>
-              <button className={view === "archive" ? "active" : ""} onClick={() => setView("archive")}>🗄️ Arsip</button>
+              <button className={view === "board" ? "active" : ""} onClick={() => setView("board")}>Papan</button>
+              <button className={view === "cal" ? "active" : ""} onClick={() => setView("cal")}>Kalender</button>
+              <button className={view === "archive" ? "active" : ""} onClick={() => setView("archive")}>Arsip</button>
             </div>
             <div className="actions">
-              <span className="role-badge">{isAdmin ? `🛠️ ${profile.bidang_name}` : `📨 ${profile.bidang_name}`}</span>
+              <span className="role-badge">{isAdmin ? `Admin — ${profile.bidang_name}` : `Bidang — ${profile.bidang_name}`}</span>
               <button className="btn-primary" onClick={() => { setEditingPost(null); setModalOpen(true); }}>
                 {isAdmin ? "+ Tambah Postingan" : "+ Request Postingan"}
               </button>
               {isAdmin && (
-                <button className="logout-btn" onClick={handleExport} title="Export ke Excel">⬇️ Export</button>
+                <button className="logout-btn" onClick={handleExport} title="Export ke Excel">Export</button>
               )}
               <button className="logout-btn" onClick={handleLogout}>Keluar</button>
             </div>
@@ -217,7 +217,6 @@ export default function App() {
 
         <div className="filterrow">
           <div className="search">
-            <span>🔎</span>
             <input type="text" placeholder="Cari judul, caption, atau PIC..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

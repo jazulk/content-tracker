@@ -1,8 +1,8 @@
 export const STATUSES = [
-  { key: "Ide", color: "#3DB4F2" },
-  { key: "Draft", color: "#FFB800" },
-  { key: "Terjadwal", color: "#7C5CFC" },
-  { key: "Posted", color: "#00C896" },
+  { key: "Request", color: "#3DB4F2" },
+  { key: "On Progress", color: "#FFB800" },
+  { key: "Siap Posting", color: "#7C5CFC" },
+  { key: "Sudah Diposting", color: "#00C896" },
   { key: "Ditolak", color: "#9CA3AF" },
 ];
 
@@ -13,12 +13,7 @@ export const PLATFORM_COLORS = {
   "Website BEM": { c: "#3DB4F2", s: "#DBF1FE" },
 };
 
-export const STAT_GRADIENTS = [
-  "linear-gradient(135deg,#7C5CFC,#9B7BFF)",
-  "linear-gradient(135deg,#FF6B6B,#FF8FA3)",
-  "linear-gradient(135deg,#3DB4F2,#5FCBF5)",
-  "linear-gradient(135deg,#00C896,#3DDBB0)",
-];
+export const STAT_GRADIENTS = ["#4C4FE0", "#2E7DAF", "#0F9D6E", "#B8860B"];
 
 export function formatDateShort(dstr) {
   if (!dstr) return "—";
@@ -29,7 +24,7 @@ export function formatDateShort(dstr) {
 export const ARCHIVE_AFTER_DAYS = 30;
 
 export function isArchived(post) {
-  if (post.status !== "Posted" || !post.post_date) return false;
+  if (post.status !== "Sudah Diposting" || !post.post_date) return false;
   const cutoff = new Date();
   cutoff.setHours(0, 0, 0, 0);
   cutoff.setDate(cutoff.getDate() - ARCHIVE_AFTER_DAYS);
@@ -38,7 +33,7 @@ export function isArchived(post) {
 }
 export function isOverdue(post) {
   if (!post.post_date) return false;
-  if (post.status === "Posted" || post.status === "Ditolak") return false;
+  if (post.status === "Sudah Diposting" || post.status === "Ditolak") return false;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const postDate = new Date(post.post_date + "T00:00:00");

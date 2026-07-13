@@ -36,7 +36,7 @@ export default function Board({ posts, profile, onCardClick, onDelete, onDropSta
               onDrop={(e) => isAdmin && handleDrop(e, st.key)}
             >
               {items.length === 0 ? (
-                <div className="empty-col">Belum ada postingan di sini ✨</div>
+                <div className="empty-col">Belum ada postingan</div>
               ) : (
                 items.map((p) => {
                   const pc = PLATFORM_COLORS[p.platform] || { c: "#999", s: "#eee" };
@@ -55,7 +55,7 @@ export default function Board({ posts, profile, onCardClick, onDelete, onDropSta
                     >
                       {overdue && (
                         <div style={{ fontSize: 10, fontWeight: 800, color: "#FF3B3B", marginBottom: 6 }}>
-                          ⚠️ TERLAMBAT
+                          TERLAMBAT
                         </div>
                       )}
                       {canModify && (
@@ -80,11 +80,11 @@ export default function Board({ posts, profile, onCardClick, onDelete, onDropSta
                       </div>
                       <div className="date-row">
                         <div>
-                          <span>📝 Diajukan</span>
+                          <span>Diajukan</span>
                           <span>{formatDateShort(p.submit_date)}</span>
                         </div>
                         <div>
-                          <span>🚀 Posting</span>
+                          <span>Posting</span>
                           <span>
                             {formatDateShort(p.post_date)}
                             {p.post_time ? ` · ${p.post_time.slice(0, 5)}` : ""}
@@ -109,7 +109,7 @@ export default function Board({ posts, profile, onCardClick, onDelete, onDropSta
                                 onClick={(e) => e.stopPropagation()}
                                 style={{ fontSize: 11, color: "var(--violet)", fontWeight: 700 }}
                               >
-                                📎 Buka link {i + 1}
+                                Buka link {i + 1}
                               </a>
                             ))}
                         </div>
@@ -124,9 +124,9 @@ export default function Board({ posts, profile, onCardClick, onDelete, onDropSta
                 })
               )}
             </div>
-            {st.key === "Posted" && posts.some((p) => p.status === "Posted" && isArchived(p)) && (
+            {st.key === "Sudah Diposting" && posts.some((p) => p.status === "Sudah Diposting" && isArchived(p)) && (
               <div style={{ fontSize: 10.5, color: "var(--ink-soft)", textAlign: "center", marginTop: 8 }}>
-                Ada postingan lama di tab 🗄️ Arsip
+                Ada postingan lama di tab Arsip
               </div>
             )}
           </div>

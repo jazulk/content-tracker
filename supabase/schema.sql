@@ -30,7 +30,7 @@ create table if not exists posts (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   platform text not null check (platform in ('Instagram','TikTok','YouTube','Website BEM')),
-  status text not null default 'Ide' check (status in ('Ide','Draft','Terjadwal','Posted','Ditolak')),
+  status text not null default 'Request' check (status in ('Request','On Progress','Siap Posting','Sudah Diposting','Ditolak')),
   submit_date date,
   post_date date,
   post_time time,
@@ -40,6 +40,7 @@ create table if not exists posts (
   rejection_note text,
   requested_by uuid references profiles(id),
   requested_by_name text,
+  updated_by uuid references profiles(id),
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -106,7 +107,16 @@ begin
 
   -- kalau yang insert adalah akun bidang, status WAJIB 'Ide' apapun yang dikirim client
   if v_role = 'bidang' then
-    new.status := 'Ide';
+    new.status := 'Request';
+
+    if new.post_date is null or new.post_date < ((now() at time zone 'Asia/Jakarta')::date + 5) then
+      raise exception 'Request cuma bisa diajukan minimal H-5 dari tanggal posting.';
+    end if;
+
+    if extract(hour from (now() at time zone 'Asia/Jakarta')) < 8
+       or extract(hour from (now() at time zone 'Asia/Jakarta')) >= 21 then
+      raise exception 'Request cuma bisa diajukan jam 08:00 - 21:00 WIB.';
+    end if;
   end if;
 
   if new.submit_date is null then
@@ -147,6 +157,8 @@ declare
   v_role text;
 begin
   select role into v_role from profiles where id = auth.uid();
+
+  new.updated_by := auth.uid();
 
   if v_role <> 'admin' then
     new.status := old.status;

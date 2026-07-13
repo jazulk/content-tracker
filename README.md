@@ -37,7 +37,33 @@ npm run dev
 ## Belum termasuk di versi ini
 ~~Notifikasi email~~ → sudah ada, lihat bagian "Setup Notifikasi Email" di bawah.
 
-## Setup Notifikasi Email (Request Baru → Ketua Mulmed & Pubinfo)
+## Revisi dari Biro (Update Terbaru)
+
+### 1. Jalankan migrasi database
+Run `supabase/migration-revisi-biro.sql` di Supabase SQL Editor (aman dijalankan walau `schema.sql` versi lama udah pernah di-run). Isinya:
+- Rename status lama ke nama baru: Ide→Request, Draft→On Progress, Terjadwal→Siap Posting, Posted→Sudah Diposting
+- Validasi di level database: bidang cuma bisa request jam 08:00–21:00 WIB, dan minimal H-5 dari tanggal posting
+- Kolom baru `updated_by` buat lacak siapa yang terakhir revisi (dipakai buat notifikasi email)
+
+### 2. Deploy ulang Edge Function
+File `supabase/functions/notify-new-request/index.ts` udah diupdate biar bisa kirim 2 jenis notif (request baru & revisi). Deploy ulang:
+```
+supabase functions deploy notify-new-request --no-verify-jwt
+```
+
+### 3. Tambah Database Webhook baru buat event Update
+Selain webhook lama (Insert), bikin 1 lagi:
+1. Dashboard → **Database** → **Webhooks** → **Create a new hook**
+2. Name: `notify-revision`
+3. Table: `posts`
+4. Events: centang **Update** aja
+5. Type: **Supabase Edge Functions** → pilih `notify-new-request` (function yang sama, dia otomatis bedain Insert vs Update)
+6. HTTP Headers: sama kayak sebelumnya, `x-webhook-secret` = value `WEBHOOK_SECRET`
+7. Save
+
+Sekarang tiap bidang edit request yang udah mereka submit, admin otomatis dapet email "Ada revisi pada request".
+
+
 
 ### 1. Siapkan akun Gmail pengirim
 1. Pakai akun Gmail (bisa akun baru khusus buat ini, atau akun pribadi).
