@@ -33,7 +33,7 @@ create table if not exists posts (
   status text not null default 'Request' check (status in ('Request','On Progress','Siap Posting','Sudah Diposting','Ditolak')),
   submit_date date,
   post_date date,
-  post_time time,
+  post_time time check (post_time is null or (post_time >= '08:00' and post_time <= '21:00')),
   pic text,
   caption text,
   source_link text,

@@ -4,14 +4,16 @@
 -- Aman dijalankan walau schema.sql versi lama udah pernah di-run.
 -- ============================================================
 
--- 1) Update data lama ke nama status baru DULU (sebelum ganti constraint)
+-- 1) Drop check constraint lama DULU (biar data bisa diubah ke nama status baru)
+alter table posts drop constraint if exists posts_status_check;
+
+-- 2) Update data lama ke nama status baru
 update posts set status = 'Request' where status = 'Ide';
 update posts set status = 'On Progress' where status = 'Draft';
 update posts set status = 'Siap Posting' where status = 'Terjadwal';
 update posts set status = 'Sudah Diposting' where status = 'Posted';
 
--- 2) Ganti check constraint ke nama status baru
-alter table posts drop constraint if exists posts_status_check;
+-- 3) Pasang check constraint baru
 alter table posts add constraint posts_status_check
   check (status in ('Request','On Progress','Siap Posting','Sudah Diposting','Ditolak'));
 alter table posts alter column status set default 'Request';
@@ -81,3 +83,8 @@ begin
   return new;
 end;
 $$;
+
+-- 6) Jam posting (field "Jam Posting") wajib di antara 08:00 - 21:00, berlaku buat semua role
+alter table posts drop constraint if exists posts_post_time_check;
+alter table posts add constraint posts_post_time_check
+  check (post_time is null or (post_time >= '08:00' and post_time <= '21:00'));

@@ -46,6 +46,15 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
       return;
     }
 
+    if (form.post_time) {
+      const [h, m] = form.post_time.split(":").map(Number);
+      const minutes = h * 60 + m;
+      if (minutes < 8 * 60 || minutes > 21 * 60) {
+        alert("Jam posting harus di antara 08:00 - 21:00 WIB.");
+        return;
+      }
+    }
+
     if (!isAdmin && !editingPost) {
       const now = new Date();
       const hour = now.getHours();
