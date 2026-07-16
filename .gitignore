@@ -3,3 +3,4 @@ dist/
 .env
 .env.local
 supabase/seed-users.js
+reset_password.js
