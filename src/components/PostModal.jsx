@@ -56,12 +56,6 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
     }
 
     if (!isAdmin && !editingPost) {
-      const now = new Date();
-      const hour = now.getHours();
-      if (hour < 8 || hour >= 21) {
-        alert("Request cuma bisa diajukan jam 08:00 - 21:00 WIB.");
-        return;
-      }
       if (!form.post_date) {
         alert("Tanggal posting wajib diisi ya.");
         return;
