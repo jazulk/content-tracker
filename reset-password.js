@@ -11,7 +11,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = "https://owoftqxjnstjyrinrdiz.supabase.co";
-const SERVICE_ROLE_KEY = "PASTE_SERVICE_ROLE_KEY_DI_SINI"; // JANGAN commit ke git
+const SERVICE_ROLE_KEY = "halokseshaeh"; // JANGAN commit ke git
 
 const USERNAME = "pengmas"; // ganti sesuai akun yang mau direset
 const PASSWORD_BARU = "password_baru_disini";
