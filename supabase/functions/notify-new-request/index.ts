@@ -127,6 +127,14 @@ Deno.serve(async (req) => {
         return new Response("skip: bukan revisi dari bidang", { status: 200 });
       }
 
+      // skip kalau nggak ada perubahan berarti (misal save tanpa ubah apa-apa)
+      const oldRecord = payload.old_record;
+      const watchedFields = ["title", "platform", "post_date", "post_time", "pic", "caption", "source_link"];
+      const hasChanges = watchedFields.some((f) => (record?.[f] ?? null) !== (oldRecord?.[f] ?? null));
+      if (!hasChanges) {
+        return new Response("skip: tidak ada perubahan konten", { status: 200 });
+      }
+
       const { subject, textBody, htmlBody } = buildEmail("revisi", profile.bidang_name, record);
       await sendEmail(subject, textBody, htmlBody);
       return new Response("ok: notif revisi terkirim", { status: 200 });
