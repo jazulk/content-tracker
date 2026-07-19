@@ -15,6 +15,7 @@ const emptyForm = {
 
 export default function PostModal({ profile, editingPost, onClose, onSave }) {
   const isAdmin = profile.role === "admin";
+  const isExemptFromH5 = profile.username === "advo"; // sering ada info mendadak, dikecualikan dari H-5
   const [form, setForm] = useState(emptyForm);
 
   useEffect(() => {
@@ -60,13 +61,15 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
         alert("Tanggal posting wajib diisi ya.");
         return;
       }
-      const minDate = new Date();
-      minDate.setHours(0, 0, 0, 0);
-      minDate.setDate(minDate.getDate() + 5);
-      const chosenDate = new Date(form.post_date + "T00:00:00");
-      if (chosenDate < minDate) {
-        alert("Request cuma bisa diajukan minimal H-5 dari tanggal posting.");
-        return;
+      if (!isExemptFromH5) {
+        const minDate = new Date();
+        minDate.setHours(0, 0, 0, 0);
+        minDate.setDate(minDate.getDate() + 5);
+        const chosenDate = new Date(form.post_date + "T00:00:00");
+        if (chosenDate < minDate) {
+          alert("Request cuma bisa diajukan minimal H-5 dari tanggal posting.");
+          return;
+        }
       }
     }
 
@@ -77,6 +80,11 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
     <div className="overlay">
       <div className="modal">
         <h2>{editingPost ? "Edit Postingan" : isAdmin ? "Tambah Postingan" : "Request Postingan"}</h2>
+        {isExemptFromH5 && !isAdmin && !editingPost && (
+          <p style={{ fontSize: 12, color: "var(--ink-soft)", margin: "-8px 0 14px" }}>
+            Bidang Advokasi dikecualikan dari aturan H-5 (buat info mendadak).
+          </p>
+        )}
         <form onSubmit={handleSubmit}>
           <div className="field">
             <label>Judul / Topik</label>
