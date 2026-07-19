@@ -22,6 +22,48 @@ function escapeHtml(s: unknown) {
   return String(s || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
 }
 
+// khusus buat field yang bisa multi-baris (caption): escape dulu, baru newline-nya diubah jadi <br/>
+function escapeHtmlMultiline(s: unknown) {
+  return escapeHtml(s).replace(/\n/g, "<br/>");
+}
+
+// denomailer (library pengirim email kita) punya bug lama: kalau ada baris teks yang
+// kepanjangan DAN mengandung emoji, dia bisa motong baris itu pas lagi di tengah-tengah
+// byte emoji (emoji itu beberapa byte) waktu di-encode ke quoted-printable -> hasilnya
+// muncul teks korup kayak "=20" di inbox.
+// Solusinya BUKAN buang emoji (biar susunan pesan tetep sama kayak aslinya di WA), tapi
+// kita yang potong barisnya sendiri jadi pendek-pendek & nggak pernah motong di tengah
+// karakter, jadi si encoder nggak perlu (dan nggak akan) motong sendiri di tempat yang salah.
+const MAX_LINE_BYTES = 70;
+const encoder = new TextEncoder();
+
+function wrapLine(line: string): string {
+  if (encoder.encode(line).length <= MAX_LINE_BYTES) return line;
+
+  const words = line.split(" ");
+  const wrapped: string[] = [];
+  let current = "";
+
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (encoder.encode(candidate).length > MAX_LINE_BYTES && current) {
+      wrapped.push(current);
+      current = word;
+    } else {
+      current = candidate;
+    }
+  }
+  if (current) wrapped.push(current);
+  return wrapped.join("\n");
+}
+
+function wrapLongLines(text: string): string {
+  return text
+    .split("\n")
+    .map((line) => wrapLine(line))
+    .join("\n");
+}
+
 function sourceLinksHtml(sourceLink: string | null) {
   return (
     (sourceLink || "")
@@ -33,7 +75,13 @@ function sourceLinksHtml(sourceLink: string | null) {
   );
 }
 
-function buildEmail(kind: "baru" | "revisi", bidangName: string, record: any) {
+function buildEmail(kind: "baru" | "revisi", bidangName: string, recordRaw: any) {
+  const record = {
+    ...recordRaw,
+    caption: wrapLongLines(String(recordRaw.caption || "")),
+    source_link: wrapLongLines(String(recordRaw.source_link || "")),
+  };
+
   const label = kind === "baru" ? "Request baru masuk" : "Ada revisi pada request";
   const subject = `[Content Tracker] ${label} dari ${bidangName}`;
 
@@ -60,7 +108,7 @@ Buka Content Tracker buat ditindaklanjuti.
       <tr><td style="color:#6E6892;">Status</td><td>: ${escapeHtml(record.status)}</td></tr>
       <tr><td style="color:#6E6892;vertical-align:top;">Tgl Posting</td><td>: ${escapeHtml(record.post_date || "-")} ${escapeHtml(record.post_time || "")}</td></tr>
       <tr><td style="color:#6E6892;">PIC</td><td>: ${escapeHtml(record.pic || "-")}</td></tr>
-      <tr><td style="color:#6E6892;vertical-align:top;">Catatan</td><td>: ${escapeHtml(record.caption || "-")}</td></tr>
+      <tr><td style="color:#6E6892;vertical-align:top;">Catatan</td><td>: ${escapeHtmlMultiline(record.caption || "-")}</td></tr>
       <tr><td style="color:#6E6892;vertical-align:top;">Link Sumber</td><td>: ${sourceLinksHtml(record.source_link)}</td></tr>
     </table>
     <p style="margin-top:16px;">Buka Content Tracker buat ditindaklanjuti.</p>

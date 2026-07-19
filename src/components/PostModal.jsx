@@ -134,19 +134,19 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
             <input type="text" value={form.pic} onChange={(e) => set("pic", e.target.value)} placeholder="misal: Jazuli" />
           </div>
           <div className="field">
-            <label>Caption / Catatan</label>
+            <label>Catatan</label>
             <textarea
               value={form.caption}
               onChange={(e) => set("caption", e.target.value)}
-              placeholder="draft caption atau catatan singkat..."
+              placeholder="catatan singkat aja (caption lengkap taruh di folder Drive, bagian Link Sumber)"
             />
           </div>
           <div className="field">
-            <label>Link Sumber — Gdrive / Docs / Spreadsheet (satu link per baris, boleh lebih dari satu)</label>
+            <label>Link Sumber — Folder Gdrive (isi: poster/gambar + docx caption lengkap)</label>
             <textarea
               value={form.source_link}
               onChange={(e) => set("source_link", e.target.value)}
-              placeholder={"https://drive.google.com/...\nhttps://docs.google.com/..."}
+              placeholder={"https://drive.google.com/drive/folders/..."}
               style={{ minHeight: 56 }}
             />
           </div>
