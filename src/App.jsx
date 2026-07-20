@@ -178,6 +178,22 @@ export default function App() {
     }
   }
 
+  async function handleToggleArchive(id, archive) {
+    const { data, error } = await supabase
+      .from("posts")
+      .update({ archived_at: archive ? new Date().toISOString() : null })
+      .eq("id", id)
+      .select();
+    if (error) {
+      showToast("Gagal update arsip: " + error.message, "error");
+      return;
+    }
+    if (data && data[0]) {
+      setPosts((prev) => prev.map((p) => (p.id === id ? data[0] : p)));
+      showToast(archive ? "Postingan dipindah ke Arsip" : "Postingan dikeluarkan dari Arsip");
+    }
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut();
   }
@@ -255,7 +271,7 @@ export default function App() {
     <>
       <div className="hero">
         <div className="hero-inner">
-          <p className="eyebrow">Medfo · BEM FASILKOM</p>
+          <p className="eyebrow">Medfo · BEM FIK</p>
           <h1 className="pagetitle display">Medflow</h1>
           <p className="sub">Pelacakan dan penjadwalan konten media sosial Medfo</p>
           <div className="topbar">
@@ -344,6 +360,7 @@ export default function App() {
             onCardClick={(p) => { setEditingPost(p); setModalOpen(true); }}
             onDelete={requestDelete}
             onDropStatus={handleDropStatus}
+            onArchive={handleToggleArchive}
           />
         ) : view === "cal" ? (
           <CalendarView
@@ -357,6 +374,7 @@ export default function App() {
             profile={profile}
             onCardClick={(p) => { setEditingPost(p); setModalOpen(true); }}
             onDelete={requestDelete}
+            onArchive={handleToggleArchive}
           />
         )}
       </div>

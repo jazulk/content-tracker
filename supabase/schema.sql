@@ -41,6 +41,7 @@ create table if not exists posts (
   requested_by uuid references profiles(id),
   requested_by_name text,
   updated_by uuid references profiles(id),
+  archived_at timestamptz,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -162,11 +163,12 @@ begin
 
   new.updated_by := auth.uid();
 
-  if v_role <> 'admin' then
+  if coalesce(v_role, '') <> 'admin' then
     new.status := old.status;
     new.rejection_note := old.rejection_note;
     new.requested_by := old.requested_by;
     new.requested_by_name := old.requested_by_name;
+    new.archived_at := old.archived_at;
   end if;
 
   return new;
@@ -212,7 +214,7 @@ as $$
 declare
   v_changes jsonb := '[]'::jsonb;
   v_actor_name text;
-  v_fields text[] := array['title','platform','status','post_date','post_time','pic','caption','source_link','rejection_note'];
+  v_fields text[] := array['title','platform','status','post_date','post_time','pic','caption','source_link','rejection_note','archived_at'];
   f text;
   old_val text;
   new_val text;

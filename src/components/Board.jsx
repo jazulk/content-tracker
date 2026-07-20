@@ -1,6 +1,6 @@
 import { STATUSES, PLATFORM_COLORS, formatDateShort, isOverdue, sortByPostDate, isArchived } from "../constants";
 
-export default function Board({ posts, profile, onCardClick, onDelete, onDropStatus }) {
+export default function Board({ posts, profile, onCardClick, onDelete, onDropStatus, onArchive }) {
   const isAdmin = profile.role === "admin";
 
   function handleDragStart(e, id) {
@@ -68,6 +68,19 @@ export default function Board({ posts, profile, onCardClick, onDelete, onDropSta
                           aria-label={`Hapus postingan ${p.title}`}
                         >
                           ✕
+                        </button>
+                      )}
+                      {isAdmin && (
+                        <button
+                          className="archive-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onArchive(p.id, true);
+                          }}
+                          aria-label={`Pindahkan postingan ${p.title} ke arsip`}
+                          title="Pindahkan ke Arsip"
+                        >
+                          ⤓
                         </button>
                       )}
                       <div className="card-title">{p.title}</div>

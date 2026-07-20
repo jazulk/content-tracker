@@ -1,6 +1,6 @@
-import { PLATFORM_COLORS, formatDateShort } from "../constants";
+import { PLATFORM_COLORS, formatDateShort, canUnarchive } from "../constants";
 
-export default function ArchiveView({ posts, profile, onCardClick, onDelete }) {
+export default function ArchiveView({ posts, profile, onCardClick, onDelete, onArchive }) {
   const isAdmin = profile.role === "admin";
 
   const grouped = {};
@@ -11,7 +11,7 @@ export default function ArchiveView({ posts, profile, onCardClick, onDelete }) {
   });
 
   if (posts.length === 0) {
-    return <div className="empty-col" style={{ padding: 40 }}>Belum ada postingan yang diarsipkan. Postingan Posted otomatis pindah ke sini setelah 30 hari.</div>;
+    return <div className="empty-col" style={{ padding: 40 }}>Belum ada postingan yang diarsipkan. Postingan Sudah Diposting otomatis pindah ke sini setelah 30 hari, atau admin bisa arsipin manual dari Papan.</div>;
   }
 
   return (
@@ -41,6 +41,19 @@ export default function ArchiveView({ posts, profile, onCardClick, onDelete }) {
                       aria-label={`Hapus postingan ${p.title}`}
                     >
                       ✕
+                    </button>
+                  )}
+                  {isAdmin && canUnarchive(p) && (
+                    <button
+                      className="archive-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onArchive(p.id, false);
+                      }}
+                      aria-label={`Keluarkan postingan ${p.title} dari arsip`}
+                      title="Keluarkan dari Arsip"
+                    >
+                      ⤒
                     </button>
                   )}
                   <div className="card-title">{p.title}</div>

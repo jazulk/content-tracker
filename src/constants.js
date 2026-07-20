@@ -24,6 +24,7 @@ export function formatDateShort(dstr) {
 export const ARCHIVE_AFTER_DAYS = 30;
 
 export function isArchived(post) {
+  if (post.archived_at) return true; // manual di-arsipin admin, apapun status/tanggalnya
   if (post.status !== "Sudah Diposting" || !post.post_date) return false;
   const cutoff = new Date();
   cutoff.setHours(0, 0, 0, 0);
@@ -63,7 +64,13 @@ export const HISTORY_FIELD_LABELS = {
   source_link: "Link Sumber",
   rejection_note: "Alasan Ditolak",
   created: "Dibuat",
+  archived_at: "Arsip",
 };
+
+export function canUnarchive(post) {
+  // cuma bisa "keluarin dari arsip" kalau dia archived manual, bukan auto (30 hari + Sudah Diposting)
+  return Boolean(post.archived_at);
+}
 
 export function formatDateTime(ts) {
   if (!ts) return "-";
@@ -81,5 +88,6 @@ function formatHistoryValue(field, val) {
 export function formatHistoryChange(change) {
   const label = HISTORY_FIELD_LABELS[change.field] || change.field;
   if (change.field === "created") return `${label}`;
+  if (change.field === "archived_at") return change.new ? "Dipindah ke Arsip" : "Dikeluarkan dari Arsip";
   return `${label}: ${formatHistoryValue(change.field, change.old)} → ${formatHistoryValue(change.field, change.new)}`;
 }
