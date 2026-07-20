@@ -23,7 +23,7 @@ export default function Login() {
   return (
     <div className="login-screen">
       <div className="login-card">
-        <h1 className="display">Content Tracker</h1>
+        <h1 className="display">Medflow</h1>
         <p>Medfo BEM FIK — masuk pakai akun bidang/admin kamu</p>
         <form onSubmit={handleSubmit}>
           <input

@@ -1,4 +1,4 @@
-# Content Tracker — Setup
+# Medflow — Setup
 
 ## 1. Setup Database Supabase
 1. Buka project Supabase kamu → **SQL Editor** → New query.
@@ -125,6 +125,8 @@ Yang didapat:
 3. Setup jadwal otomatis harian: run `supabase/migration-cron-h1-reminder.sql` di SQL Editor. **Sebelum run**, edit dulu 2 bagian di file itu:
    - URL project (ganti `owoftqxjnstjyrinrdiz` kalau project-ref kamu beda)
    - Value `WEBHOOK_SECRET` (samain persis sama yang di-set di step 4 bagian "Setup Notifikasi Email")
+
+   ⚠️ Setelah selesai run, **kembaliin lagi jadi placeholder** `GANTI_DENGAN_WEBHOOK_SECRET_KAMU` sebelum commit & push file ini, biar secret aslinya nggak ke-expose di GitHub.
 4. Function ini jalan otomatis tiap jam 08:00 WIB, ngecek postingan yang jadwalnya BESOK dan belum "Sudah Diposting", terus kirim 1 email ringkasan ke admin.
 5. Testing manual (tanpa nunggu jadwal cron): jalanin lewat terminal —
    ```

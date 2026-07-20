@@ -234,9 +234,9 @@ export default function App() {
       { wch: 12 }, { wch: 10 }, { wch: 14 }, { wch: 40 }, { wch: 30 }, { wch: 20 },
     ];
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Content Tracker");
+    XLSX.utils.book_append_sheet(wb, ws, "Medflow");
     const today = new Date().toISOString().slice(0, 10);
-    XLSX.writeFile(wb, `content-tracker-${today}.xlsx`);
+    XLSX.writeFile(wb, `medflow-${today}.xlsx`);
   }
 
   const byPlatform = useMemo(() => {
@@ -256,7 +256,7 @@ export default function App() {
       <div className="hero">
         <div className="hero-inner">
           <p className="eyebrow">Medfo · BEM FIK</p>
-          <h1 className="pagetitle display">Content Tracker</h1>
+          <h1 className="pagetitle display">Medflow</h1>
           <p className="sub">Pelacakan dan penjadwalan konten media sosial Medfo</p>
           <div className="topbar">
             <div className="seg">

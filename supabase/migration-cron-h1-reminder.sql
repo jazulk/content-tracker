@@ -3,14 +3,16 @@
 -- Jalankan di: Supabase Dashboard > SQL Editor > New query > Run
 -- Prasyarat: extension pg_cron & pg_net (biasanya sudah aktif di Supabase,
 -- kalau belum: Dashboard > Database > Extensions > cari "pg_cron" & "pg_net" > Enable)
+--
+-- !! PENTING !!: isi WEBHOOK_SECRET asli di bawah sebelum run, TAPI setelah
+-- selesai run, kembaliin lagi jadi placeholder "GANTI_DENGAN_WEBHOOK_SECRET_KAMU"
+-- SEBELUM commit & push file ini ke GitHub -- biar secret aslinya nggak ke-expose
+-- di repo (repo boleh public/kebaca orang lain).
 -- ============================================================
 
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 
--- GANTI 2 value di bawah sesuai project kamu sebelum run:
---   1. project-ref (ganti "owoftqxjnstjyrinrdiz" kalau beda)
---   2. WEBHOOK_SECRET (samain persis sama secret yang di-set di edge function)
 select cron.schedule(
   'remind-h1-daily',
   '0 1 * * *', -- 01:00 UTC = 08:00 WIB
@@ -31,3 +33,6 @@ select cron.schedule(
 
 -- Buat hapus/nonaktifkan kalau perlu:
 -- select cron.unschedule('remind-h1-daily');
+
+-- Kalau nanti WEBHOOK_SECRET diganti, run cron.unschedule dulu terus cron.schedule
+-- ulang dengan secret barunya (cron.schedule dengan job_name yang sama otomatis replace).

@@ -83,7 +83,7 @@ function buildEmail(kind: "baru" | "revisi", bidangName: string, recordRaw: any)
   };
 
   const label = kind === "baru" ? "Request baru masuk" : "Ada revisi pada request";
-  const subject = `[Content Tracker] ${label} dari ${bidangName}`;
+  const subject = `[Medflow] ${label} dari ${bidangName}`;
 
   const textBody = `
 ${label} dari bidang ${bidangName}.
@@ -96,7 +96,7 @@ PIC         : ${record.pic || "-"}
 Catatan     : ${record.caption || "-"}
 Link Sumber : ${record.source_link || "-"}
 
-Buka Content Tracker buat ditindaklanjuti.
+Buka Medflow buat ditindaklanjuti.
 `.trim();
 
   const htmlBody = `
@@ -111,7 +111,7 @@ Buka Content Tracker buat ditindaklanjuti.
       <tr><td style="color:#6E6892;vertical-align:top;">Catatan</td><td>: ${escapeHtmlMultiline(record.caption || "-")}</td></tr>
       <tr><td style="color:#6E6892;vertical-align:top;">Link Sumber</td><td>: ${sourceLinksHtml(record.source_link)}</td></tr>
     </table>
-    <p style="margin-top:16px;">Buka Content Tracker buat ditindaklanjuti.</p>
+    <p style="margin-top:16px;">Buka Medflow buat ditindaklanjuti.</p>
   </div>
   `.trim();
 

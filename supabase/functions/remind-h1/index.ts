@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     return new Response("skip: tidak ada postingan besok", { status: 200 });
   }
 
-  const subject = `[Content Tracker] Reminder H-1: ${posts.length} postingan besok (${targetDate})`;
+  const subject = `[Medflow] Reminder H-1: ${posts.length} postingan besok (${targetDate})`;
 
   const rowsText = posts
     .map(
