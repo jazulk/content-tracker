@@ -255,7 +255,7 @@ export default function App() {
     <>
       <div className="hero">
         <div className="hero-inner">
-          <p className="eyebrow">Medfo · BEM FIK</p>
+          <p className="eyebrow">Medfo · BEM FASILKOM</p>
           <h1 className="pagetitle display">Medflow</h1>
           <p className="sub">Pelacakan dan penjadwalan konten media sosial Medfo</p>
           <div className="topbar">
