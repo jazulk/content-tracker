@@ -98,25 +98,27 @@ as $$
 declare
   v_role text;
   v_bidang text;
+  v_username text;
 begin
-  select role, bidang_name into v_role, v_bidang
+  select role, bidang_name, username into v_role, v_bidang, v_username
   from profiles where id = auth.uid();
 
   new.requested_by := auth.uid();
   new.requested_by_name := v_bidang;
 
-  -- kalau yang insert adalah akun bidang, status WAJIB 'Ide' apapun yang dikirim client
+  -- kalau yang insert adalah akun bidang, status WAJIB 'Request' apapun yang dikirim client
   if v_role = 'bidang' then
     new.status := 'Request';
 
-    if new.post_date is null or new.post_date < ((now() at time zone 'Asia/Jakarta')::date + 5) then
-      raise exception 'Request cuma bisa diajukan minimal H-5 dari tanggal posting.';
+    -- bidang Advokasi dikecualikan dari H-5 (info sering mendadak)
+    if v_username <> 'advo' then
+      if new.post_date is null or new.post_date < ((now() at time zone 'Asia/Jakarta')::date + 5) then
+        raise exception 'Request cuma bisa diajukan minimal H-5 dari tanggal posting.';
+      end if;
     end if;
 
-    if extract(hour from (now() at time zone 'Asia/Jakarta')) < 8
-       or extract(hour from (now() at time zone 'Asia/Jakarta')) >= 21 then
-      raise exception 'Request cuma bisa diajukan jam 08:00 - 21:00 WIB.';
-    end if;
+    -- catatan: validasi jam 08:00-21:00 buat KOLOM post_time udah dihandle
+    -- lewat constraint posts_post_time_check, BUKAN buat ngeblok jam submit.
   end if;
 
   if new.submit_date is null then
@@ -175,3 +177,81 @@ drop trigger if exists trg_enforce_post_update on posts;
 create trigger trg_enforce_post_update
   before update on posts
   for each row execute function enforce_post_update();
+
+-- ---------- HISTORY: catat siapa ubah apa & kapan ----------
+create table if not exists post_history (
+  id uuid primary key default gen_random_uuid(),
+  post_id uuid not null references posts(id) on delete cascade,
+  changed_by uuid references profiles(id),
+  changed_by_name text,
+  changes jsonb not null,
+  changed_at timestamptz default now()
+);
+
+create index if not exists idx_post_history_post_id on post_history(post_id);
+
+alter table post_history enable row level security;
+
+-- Admin bisa lihat history SEMUA postingan.
+-- Bidang cuma bisa lihat history postingan yang mereka ajukan sendiri.
+drop policy if exists "post_history_select_admin_or_owner" on post_history;
+create policy "post_history_select_admin_or_owner"
+  on post_history for select
+  to authenticated
+  using (
+    exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin')
+    or exists (select 1 from posts p where p.id = post_history.post_id and p.requested_by = auth.uid())
+  );
+
+create or replace function log_post_history()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_changes jsonb := '[]'::jsonb;
+  v_actor_name text;
+  v_fields text[] := array['title','platform','status','post_date','post_time','pic','caption','source_link','rejection_note'];
+  f text;
+  old_val text;
+  new_val text;
+  old_json jsonb;
+  new_json jsonb;
+begin
+  select bidang_name into v_actor_name from profiles where id = auth.uid();
+
+  if TG_OP = 'INSERT' then
+    v_changes := jsonb_build_array(jsonb_build_object('field', 'created', 'old', null, 'new', 'Request dibuat'));
+  else
+    old_json := to_jsonb(old);
+    new_json := to_jsonb(new);
+    foreach f in array v_fields loop
+      old_val := old_json ->> f;
+      new_val := new_json ->> f;
+      if old_val is distinct from new_val then
+        v_changes := v_changes || jsonb_build_object('field', f, 'old', old_val, 'new', new_val);
+      end if;
+    end loop;
+
+    if jsonb_array_length(v_changes) = 0 then
+      return new;
+    end if;
+  end if;
+
+  insert into post_history (post_id, changed_by, changed_by_name, changes)
+  values (new.id, auth.uid(), coalesce(v_actor_name, 'System'), v_changes);
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_log_post_history_insert on posts;
+create trigger trg_log_post_history_insert
+  after insert on posts
+  for each row execute function log_post_history();
+
+drop trigger if exists trg_log_post_history_update on posts;
+create trigger trg_log_post_history_update
+  after update on posts
+  for each row execute function log_post_history();

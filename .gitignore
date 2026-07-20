@@ -4,3 +4,6 @@ dist/
 .env.local
 supabase/seed-users.js
 reset-password.js
+update-account.js
+supabase/.temp/
+.DS_Store

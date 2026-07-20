@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { STATUSES } from "../constants";
+import { supabase } from "../supabaseClient";
+import { STATUSES, formatDateTime, formatHistoryChange } from "../constants";
 
 const emptyForm = {
   title: "",
@@ -17,6 +18,10 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
   const isAdmin = profile.role === "admin";
   const isExemptFromH5 = profile.username === "advo"; // sering ada info mendadak, dikecualikan dari H-5
   const [form, setForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   useEffect(() => {
     if (editingPost) {
@@ -34,13 +39,33 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
     } else {
       setForm(emptyForm);
     }
+    setHistory([]);
+    setHistoryOpen(false);
   }, [editingPost]);
+
+  async function loadHistory() {
+    if (!editingPost) return;
+    setLoadingHistory(true);
+    const { data, error } = await supabase
+      .from("post_history")
+      .select("*")
+      .eq("post_id", editingPost.id)
+      .order("changed_at", { ascending: false });
+    if (!error) setHistory(data || []);
+    setLoadingHistory(false);
+  }
+
+  function toggleHistory() {
+    const next = !historyOpen;
+    setHistoryOpen(next);
+    if (next && history.length === 0) loadHistory();
+  }
 
   function set(key, val) {
     setForm((f) => ({ ...f, [key]: val }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     if (!form.title.trim()) {
       alert("Judul postingan wajib diisi ya");
@@ -73,7 +98,11 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
       }
     }
 
-    onSave(form);
+    setSaving(true);
+    const ok = await onSave(form);
+    setSaving(false);
+    // kalau gagal (misal konflik edit bareng), modal TETAP kebuka biar isian nggak ilang
+    if (!ok) return;
   }
 
   return (
@@ -160,12 +189,43 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
               />
             </div>
           )}
+
+          {editingPost && (
+            <div className="history-section">
+              <button type="button" className="history-toggle" onClick={toggleHistory} aria-expanded={historyOpen}>
+                {historyOpen ? "▾" : "▸"} Riwayat Perubahan
+              </button>
+              {historyOpen && (
+                <div className="history-list">
+                  {loadingHistory ? (
+                    <div className="history-empty">Memuat riwayat...</div>
+                  ) : history.length === 0 ? (
+                    <div className="history-empty">Belum ada riwayat perubahan.</div>
+                  ) : (
+                    history.map((h) => (
+                      <div className="history-item" key={h.id}>
+                        <div className="history-meta">
+                          <b>{h.changed_by_name || "System"}</b> · {formatDateTime(h.changed_at)}
+                        </div>
+                        {(h.changes || []).map((c, i) => (
+                          <div className="history-change" key={i}>
+                            {formatHistoryChange(c)}
+                          </div>
+                        ))}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="modal-actions">
-            <button type="button" className="btn-ghost" onClick={onClose}>
+            <button type="button" className="btn-ghost" onClick={onClose} disabled={saving} aria-label="Batalkan dan tutup form">
               Batal
             </button>
-            <button type="submit" className="btn-primary wide">
-              Simpan
+            <button type="submit" className="btn-primary wide" disabled={saving}>
+              {saving ? "Menyimpan..." : "Simpan"}
             </button>
           </div>
         </form>

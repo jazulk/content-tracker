@@ -106,5 +106,31 @@ supabase secrets set WEBHOOK_SECRET=bikinstringrandomsendiribuatpassword
 Login pakai salah satu akun bidang, submit request baru → cek inbox 2 email ketua (cek folder spam juga kalau belum masuk).
 
 
+## 7. Upgrade Pack: History & Reminder H-1
+
+### 7.1 Fitur History (riwayat perubahan tiap postingan)
+Kalau database kamu **udah pernah** di-setup sebelumnya (bukan fresh install), run `supabase/migration-post-history.sql` di SQL Editor. Kalau ini fresh install baru dari `schema.sql`, fiturnya udah otomatis ikut karena udah digabung ke `schema.sql`.
+
+Yang didapat:
+- Setiap perubahan (judul, status, tanggal posting, dll) otomatis kecatat siapa yang ubah & kapan
+- Bisa dilihat di form edit postingan, expand bagian "Riwayat Perubahan"
+- Admin bisa lihat history SEMUA postingan; bidang cuma bisa lihat history postingan miliknya sendiri
+
+### 7.2 Reminder H-1 (email otomatis buat postingan besok)
+1. Deploy edge function baru:
+   ```
+   supabase functions deploy remind-h1 --no-verify-jwt
+   ```
+2. Function ini pakai secrets yang sama kayak `notify-new-request` (`GMAIL_USER`, `GMAIL_APP_PASSWORD`, `ADMIN_EMAILS`, `WEBHOOK_SECRET`) — kalau udah di-set sebelumnya, nggak perlu di-set ulang.
+3. Setup jadwal otomatis harian: run `supabase/migration-cron-h1-reminder.sql` di SQL Editor. **Sebelum run**, edit dulu 2 bagian di file itu:
+   - URL project (ganti `owoftqxjnstjyrinrdiz` kalau project-ref kamu beda)
+   - Value `WEBHOOK_SECRET` (samain persis sama yang di-set di step 4 bagian "Setup Notifikasi Email")
+4. Function ini jalan otomatis tiap jam 08:00 WIB, ngecek postingan yang jadwalnya BESOK dan belum "Sudah Diposting", terus kirim 1 email ringkasan ke admin.
+5. Testing manual (tanpa nunggu jadwal cron): jalanin lewat terminal —
+   ```
+   curl -X POST https://owoftqxjnstjyrinrdiz.supabase.co/functions/v1/remind-h1 \
+     -H "x-webhook-secret: isi_sama_dengan_WEBHOOK_SECRET"
+   ```
+
 ## Catatan Keamanan
 Hak akses (bidang cuma bisa insert, admin bisa update/delete) dikunci lewat Row Level Security di database — bukan cuma disembunyikan di tampilan. Jadi walau ada yang coba akses API langsung, aturannya tetap berlaku.

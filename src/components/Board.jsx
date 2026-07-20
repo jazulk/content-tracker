@@ -65,6 +65,7 @@ export default function Board({ posts, profile, onCardClick, onDelete, onDropSta
                             e.stopPropagation();
                             onDelete(p.id);
                           }}
+                          aria-label={`Hapus postingan ${p.title}`}
                         >
                           ✕
                         </button>

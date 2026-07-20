@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import { supabase } from "./supabaseClient";
 import Login from "./components/Login";
@@ -6,6 +6,9 @@ import Board from "./components/Board";
 import CalendarView from "./components/CalendarView";
 import ArchiveView from "./components/ArchiveView";
 import PostModal from "./components/PostModal";
+import Toast from "./components/Toast";
+import ConfirmDialog from "./components/ConfirmDialog";
+import { useDebounce } from "./hooks/useDebounce";
 import { PLATFORM_COLORS, STAT_GRADIENTS, STATUSES, isArchived } from "./constants";
 
 export default function App() {
@@ -17,12 +20,22 @@ export default function App() {
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [view, setView] = useState("board");
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
   const [platformFilter, setPlatformFilter] = useState(null);
   const [statusFilter, setStatusFilter] = useState(null);
   const [bidangFilter, setBidangFilter] = useState(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
+
+  const [toast, setToast] = useState(null);
+  const [confirmState, setConfirmState] = useState(null); // { id, title }
+
+  const showToast = useCallback((message, type = "success") => {
+    setToast({ message, type });
+    window.clearTimeout(showToast._t);
+    showToast._t = window.setTimeout(() => setToast(null), 3200);
+  }, []);
 
   // ---------- Auth ----------
   useEffect(() => {
@@ -51,15 +64,27 @@ export default function App() {
       });
   }, [session]);
 
-  // ---------- Posts: fetch + realtime ----------
+  // ---------- Posts: fetch awal + realtime patch (bukan refetch semua) ----------
   useEffect(() => {
     if (!profile) return;
     fetchPosts();
 
     const channel = supabase
       .channel("posts-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "posts" }, () => {
-        fetchPosts();
+      .on("postgres_changes", { event: "*", schema: "public", table: "posts" }, (payload) => {
+        setPosts((prev) => {
+          if (payload.eventType === "INSERT") {
+            if (prev.some((p) => p.id === payload.new.id)) return prev; // udah ada (dari optimistic update sendiri)
+            return [payload.new, ...prev];
+          }
+          if (payload.eventType === "UPDATE") {
+            return prev.map((p) => (p.id === payload.new.id ? payload.new : p));
+          }
+          if (payload.eventType === "DELETE") {
+            return prev.filter((p) => p.id !== payload.old.id);
+          }
+          return prev;
+        });
       })
       .subscribe();
 
@@ -74,39 +99,83 @@ export default function App() {
   }
 
   // ---------- CRUD ----------
+  // Return true kalau berhasil, false kalau gagal -- dipakai PostModal buat tau
+  // apakah boleh nutup form atau harus tetap kebuka (misal ada error).
   async function handleSave(form) {
     if (editingPost) {
-      const { error } = await supabase.from("posts").update(form).eq("id", editingPost.id);
-      if (error) alert("Gagal menyimpan: " + error.message);
+      // deteksi konflik: kalau updated_at udah beda dari waktu form ini dibuka,
+      // berarti ada orang lain yang udah ubah postingan ini duluan.
+      const { data, error } = await supabase
+        .from("posts")
+        .update(form)
+        .eq("id", editingPost.id)
+        .eq("updated_at", editingPost.updated_at)
+        .select();
+
+      if (error) {
+        showToast("Gagal menyimpan: " + error.message, "error");
+        return false;
+      }
+      if (!data || data.length === 0) {
+        showToast("Postingan ini baru aja diubah orang lain. Data terbaru sudah dimuat ulang, coba edit lagi ya.", "error");
+        fetchPosts();
+        return false;
+      }
+      setPosts((prev) => prev.map((p) => (p.id === data[0].id ? data[0] : p)));
+      showToast("Postingan berhasil diperbarui");
     } else {
-      const { error } = await supabase.from("posts").insert({
-        title: form.title,
-        platform: form.platform,
-        status: form.status,
-        post_date: form.post_date || null,
-        post_time: form.post_time || null,
-        pic: form.pic,
-        caption: form.caption,
-        source_link: form.source_link,
-      });
-      if (error) alert("Gagal menyimpan: " + error.message);
+      const { data, error } = await supabase
+        .from("posts")
+        .insert({
+          title: form.title,
+          platform: form.platform,
+          status: form.status,
+          post_date: form.post_date || null,
+          post_time: form.post_time || null,
+          pic: form.pic,
+          caption: form.caption,
+          source_link: form.source_link,
+        })
+        .select();
+
+      if (error) {
+        showToast("Gagal menyimpan: " + error.message, "error");
+        return false;
+      }
+      setPosts((prev) => [data[0], ...prev]);
+      showToast(profile.role === "admin" ? "Postingan berhasil ditambahkan" : "Request berhasil dikirim");
     }
+
     setModalOpen(false);
     setEditingPost(null);
-    fetchPosts();
+    return true;
   }
 
-  async function handleDelete(id) {
-    if (!confirm("Hapus postingan ini?")) return;
+  function requestDelete(id) {
+    setConfirmState({ id, title: "Hapus postingan ini?" });
+  }
+
+  async function confirmDelete() {
+    const id = confirmState.id;
+    setConfirmState(null);
     const { error } = await supabase.from("posts").delete().eq("id", id);
-    if (error) alert("Gagal menghapus: " + error.message);
-    fetchPosts();
+    if (error) {
+      showToast("Gagal menghapus: " + error.message, "error");
+      return;
+    }
+    setPosts((prev) => prev.filter((p) => p.id !== id));
+    showToast("Postingan berhasil dihapus");
   }
 
   async function handleDropStatus(id, status) {
-    const { error } = await supabase.from("posts").update({ status }).eq("id", id);
-    if (error) alert("Gagal update status: " + error.message);
-    fetchPosts();
+    const { data, error } = await supabase.from("posts").update({ status }).eq("id", id).select();
+    if (error) {
+      showToast("Gagal update status: " + error.message, "error");
+      return;
+    }
+    if (data && data[0]) {
+      setPosts((prev) => prev.map((p) => (p.id === id ? data[0] : p)));
+    }
   }
 
   async function handleLogout() {
@@ -119,14 +188,14 @@ export default function App() {
       if (platformFilter && p.platform !== platformFilter) return false;
       if (statusFilter && p.status !== statusFilter) return false;
       if (bidangFilter && p.requested_by_name !== bidangFilter) return false;
-      if (search) {
-        const q = search.toLowerCase();
+      if (debouncedSearch) {
+        const q = debouncedSearch.toLowerCase();
         const hay = `${p.title} ${p.caption || ""} ${p.pic || ""}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
     });
-  }, [posts, platformFilter, statusFilter, bidangFilter, search]);
+  }, [posts, platformFilter, statusFilter, bidangFilter, debouncedSearch]);
 
   const bidangList = useMemo(() => {
     const set = new Set(posts.map((p) => p.requested_by_name).filter(Boolean));
@@ -134,6 +203,16 @@ export default function App() {
   }, [posts]);
 
   const archivedPosts = useMemo(() => filteredPosts.filter(isArchived), [filteredPosts]);
+
+  const hasActiveFilter = Boolean(platformFilter || statusFilter || bidangFilter || debouncedSearch);
+  const noResultsFromFilter = posts.length > 0 && filteredPosts.length === 0 && hasActiveFilter;
+
+  function resetFilters() {
+    setSearch("");
+    setPlatformFilter(null);
+    setStatusFilter(null);
+    setBidangFilter(null);
+  }
 
   function handleExport() {
     const rows = filteredPosts.map((p) => ({
@@ -193,7 +272,7 @@ export default function App() {
               {isAdmin && (
                 <button className="logout-btn" onClick={handleExport} title="Export ke Excel">Export</button>
               )}
-              <button className="logout-btn" onClick={handleLogout}>Keluar</button>
+              <button className="logout-btn" onClick={handleLogout} aria-label="Keluar dari akun">Keluar</button>
             </div>
           </div>
         </div>
@@ -217,15 +296,21 @@ export default function App() {
 
         <div className="filterrow">
           <div className="search">
-            <input type="text" placeholder="Cari judul, caption, atau PIC..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            <input
+              type="text"
+              placeholder="Cari judul, caption, atau PIC..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Cari postingan"
+            />
           </div>
         </div>
-        <div className="filterrow" style={{ rowGap: 8 }}>
+        <div className="filterrow chip-scroll" style={{ rowGap: 8 }}>
           <button className={`chip ${!platformFilter ? "active" : ""}`} onClick={() => setPlatformFilter(null)}>Semua Platform</button>
           {Object.keys(PLATFORM_COLORS).map((pl) => (
             <button key={pl} className={`chip ${platformFilter === pl ? "active" : ""}`} onClick={() => setPlatformFilter(pl)}>{pl}</button>
           ))}
-          <span style={{ width: 1, alignSelf: "stretch", background: "var(--line)", margin: "0 4px" }} />
+          <span className="chip-divider" />
           <button className={`chip ${!statusFilter ? "active" : ""}`} onClick={() => setStatusFilter(null)}>Semua Status</button>
           {STATUSES.map((s) => (
             <button key={s.key} className={`chip ${statusFilter === s.key ? "active" : ""}`} onClick={() => setStatusFilter(s.key)}>{s.key}</button>
@@ -234,6 +319,7 @@ export default function App() {
             <select
               value={bidangFilter || ""}
               onChange={(e) => setBidangFilter(e.target.value || null)}
+              aria-label="Filter berdasarkan bidang"
               style={{ marginLeft: "auto", border: "1.5px solid var(--line)", borderRadius: 10, padding: "7px 12px", fontSize: 12.5, fontWeight: 600, color: "var(--ink-soft)", background: "var(--card)" }}
             >
               <option value="">Semua Bidang</option>
@@ -246,12 +332,17 @@ export default function App() {
 
         {loadingPosts ? (
           <div className="loading-note">Lagi ngambil data postingan...</div>
+        ) : noResultsFromFilter ? (
+          <div className="empty-state">
+            <p>Nggak ada postingan yang cocok sama filter/pencarian ini.</p>
+            <button className="btn-ghost" onClick={resetFilters}>Reset Filter</button>
+          </div>
         ) : view === "board" ? (
           <Board
             posts={filteredPosts}
             profile={profile}
             onCardClick={(p) => { setEditingPost(p); setModalOpen(true); }}
-            onDelete={handleDelete}
+            onDelete={requestDelete}
             onDropStatus={handleDropStatus}
           />
         ) : view === "cal" ? (
@@ -265,7 +356,7 @@ export default function App() {
             posts={archivedPosts}
             profile={profile}
             onCardClick={(p) => { setEditingPost(p); setModalOpen(true); }}
-            onDelete={handleDelete}
+            onDelete={requestDelete}
           />
         )}
       </div>
@@ -278,6 +369,16 @@ export default function App() {
           onSave={handleSave}
         />
       )}
+
+      <ConfirmDialog
+        open={Boolean(confirmState)}
+        title={confirmState?.title || ""}
+        message="Postingan yang udah dihapus nggak bisa dikembalikan lagi."
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmState(null)}
+      />
+
+      <Toast toast={toast} />
     </>
   );
 }

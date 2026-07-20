@@ -38,6 +38,7 @@ export default function ArchiveView({ posts, profile, onCardClick, onDelete }) {
                         e.stopPropagation();
                         onDelete(p.id);
                       }}
+                      aria-label={`Hapus postingan ${p.title}`}
                     >
                       ✕
                     </button>

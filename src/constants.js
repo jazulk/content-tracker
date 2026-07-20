@@ -50,3 +50,36 @@ export function sortByPostDate(posts) {
     return (a.post_time || "").localeCompare(b.post_time || "");
   });
 }
+
+// ---------- History ----------
+export const HISTORY_FIELD_LABELS = {
+  title: "Judul",
+  platform: "Platform",
+  status: "Status",
+  post_date: "Tanggal Posting",
+  post_time: "Jam Posting",
+  pic: "PIC",
+  caption: "Catatan",
+  source_link: "Link Sumber",
+  rejection_note: "Alasan Ditolak",
+  created: "Dibuat",
+};
+
+export function formatDateTime(ts) {
+  if (!ts) return "-";
+  const d = new Date(ts);
+  return d.toLocaleString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+function formatHistoryValue(field, val) {
+  if (val === null || val === undefined || val === "") return "-";
+  if (field === "post_date") return formatDateShort(val);
+  if (field === "post_time") return String(val).slice(0, 5);
+  return String(val).length > 60 ? String(val).slice(0, 60) + "..." : String(val);
+}
+
+export function formatHistoryChange(change) {
+  const label = HISTORY_FIELD_LABELS[change.field] || change.field;
+  if (change.field === "created") return `${label}`;
+  return `${label}: ${formatHistoryValue(change.field, change.old)} → ${formatHistoryValue(change.field, change.new)}`;
+}

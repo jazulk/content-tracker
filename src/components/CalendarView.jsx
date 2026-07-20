@@ -50,9 +50,9 @@ export default function CalendarView({ posts, profile, onCardClick }) {
       <div className="cal-head">
         <div className="cal-title display">{MONTH_NAMES[month]} {year}</div>
         <div className="cal-nav">
-          <button onClick={prevMonth}>←</button>
+          <button onClick={prevMonth} aria-label="Bulan sebelumnya">←</button>
           <button style={{ width: "auto", padding: "0 12px", fontSize: 12 }} onClick={goToday}>Hari ini</button>
-          <button onClick={nextMonth}>→</button>
+          <button onClick={nextMonth} aria-label="Bulan berikutnya">→</button>
         </div>
       </div>
       <div className="cal-grid">
