@@ -14,7 +14,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = "https://owoftqxjnstjyrinrdiz.supabase.co";
-const SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93b2Z0cXhqbnN0anlyaW5yZGl6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MzQzMTY1NCwiZXhwIjoyMDk5MDA3NjU0fQ.MLrtqYRXD1icOV8cGw5S-gbKr7qkt7vXAIBX3fY1WGk"; // JANGAN commit ke git
+const SERVICE_ROLE_KEY = "secret"; // JANGAN commit ke git
 
 const USERNAME_LAMA = "pengmas"; // buat nyari akunnya, jangan diubah dulu di sini
 const USERNAME_BARU = "pengmas"; // isi sama kalau nggak mau ganti username
