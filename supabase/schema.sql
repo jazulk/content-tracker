@@ -10,7 +10,7 @@ create extension if not exists pgcrypto;
 create table if not exists profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   username text unique not null,
-  role text not null check (role in ('admin','bidang')),
+  role text not null check (role in ('admin','bidang','viewer')),
   bidang_name text not null,
   created_at timestamptz default now()
 );
@@ -55,14 +55,16 @@ create policy "posts_select_all_authenticated"
   to authenticated
   using (true);
 
--- Semua akun yang login boleh insert (request baru).
+-- Cuma admin & bidang yang boleh insert (viewer read-only, nggak boleh nulis apa-apa).
 -- Nilai requested_by, requested_by_name, dan status di-force oleh trigger di bawah,
 -- jadi client tidak bisa menitipkan status lain lewat request body.
 drop policy if exists "posts_insert_authenticated" on posts;
-create policy "posts_insert_authenticated"
+create policy "posts_insert_admin_or_bidang"
   on posts for insert
   to authenticated
-  with check (true);
+  with check (
+    exists (select 1 from profiles p where p.id = auth.uid() and p.role in ('admin','bidang'))
+  );
 
 -- Admin boleh update semua. Bidang boleh update HANYA postingan miliknya sendiri
 -- (status tetap dikunci lewat trigger di bawah, terlepas dari policy ini).
@@ -194,14 +196,14 @@ create index if not exists idx_post_history_post_id on post_history(post_id);
 
 alter table post_history enable row level security;
 
--- Admin bisa lihat history SEMUA postingan.
+-- Admin & viewer bisa lihat history SEMUA postingan.
 -- Bidang cuma bisa lihat history postingan yang mereka ajukan sendiri.
 drop policy if exists "post_history_select_admin_or_owner" on post_history;
 create policy "post_history_select_admin_or_owner"
   on post_history for select
   to authenticated
   using (
-    exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin')
+    exists (select 1 from profiles p where p.id = auth.uid() and p.role in ('admin','viewer'))
     or exists (select 1 from posts p where p.id = post_history.post_id and p.requested_by = auth.uid())
   );
 

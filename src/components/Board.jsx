@@ -43,6 +43,7 @@ export default function Board({ posts, profile, onCardClick, onDelete, onDropSta
                   const initials = (p.pic || "?").trim().slice(0, 2).toUpperCase();
                   const isOwner = p.requested_by === profile.id;
                   const canModify = isAdmin || isOwner;
+                  const canOpen = canModify || profile.role === "viewer";
                   const overdue = isOverdue(p);
                   return (
                     <div
@@ -50,8 +51,8 @@ export default function Board({ posts, profile, onCardClick, onDelete, onDropSta
                       className="card"
                       draggable={isAdmin}
                       onDragStart={(e) => handleDragStart(e, p.id)}
-                      style={{ borderLeftColor: overdue ? "#FF3B3B" : st.color, cursor: canModify ? "pointer" : "default" }}
-                      onClick={() => canModify && onCardClick(p)}
+                      style={{ borderLeftColor: overdue ? "#FF3B3B" : st.color, cursor: canOpen ? "pointer" : "default" }}
+                      onClick={() => canOpen && onCardClick(p)}
                     >
                       {overdue && (
                         <div style={{ fontSize: 10, fontWeight: 800, color: "#FF3B3B", marginBottom: 6 }}>

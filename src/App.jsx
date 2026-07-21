@@ -266,6 +266,7 @@ export default function App() {
   if (!profile) return <div className="loading-note">Menyiapkan akun...</div>;
 
   const isAdmin = profile.role === "admin";
+  const isViewer = profile.role === "viewer";
 
   return (
     <>
@@ -281,10 +282,12 @@ export default function App() {
               <button className={view === "archive" ? "active" : ""} onClick={() => setView("archive")}>Arsip</button>
             </div>
             <div className="actions">
-              <span className="role-badge">{isAdmin ? `Admin — ${profile.bidang_name}` : `Bidang — ${profile.bidang_name}`}</span>
-              <button className="btn-primary" onClick={() => { setEditingPost(null); setModalOpen(true); }}>
-                {isAdmin ? "+ Tambah Postingan" : "+ Request Postingan"}
-              </button>
+              <span className="role-badge">{isAdmin ? `Admin — ${profile.bidang_name}` : isViewer ? `Viewer — ${profile.bidang_name}` : `Bidang — ${profile.bidang_name}`}</span>
+              {!isViewer && (
+                <button className="btn-primary" onClick={() => { setEditingPost(null); setModalOpen(true); }}>
+                  {isAdmin ? "+ Tambah Postingan" : "+ Request Postingan"}
+                </button>
+              )}
               {isAdmin && (
                 <button className="logout-btn" onClick={handleExport} title="Export ke Excel">Export</button>
               )}

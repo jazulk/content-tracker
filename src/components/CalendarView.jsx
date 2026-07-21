@@ -104,13 +104,14 @@ export default function CalendarView({ posts, profile, onCardClick }) {
                       const isAdmin = profile.role === "admin";
                       const isOwner = p.requested_by === profile.id;
                       const canModify = isAdmin || isOwner;
+                      const canOpen = canModify || profile.role === "viewer";
                       return (
                         <div
                           key={p.id}
                           className="card"
-                          style={{ borderLeftColor: st.color, cursor: canModify ? "pointer" : "default", marginBottom: 8 }}
+                          style={{ borderLeftColor: st.color, cursor: canOpen ? "pointer" : "default", marginBottom: 8 }}
                           onClick={() => {
-                            if (!canModify) return;
+                            if (!canOpen) return;
                             setDayDetail(null);
                             onCardClick(p);
                           }}

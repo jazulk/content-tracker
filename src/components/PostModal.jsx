@@ -16,6 +16,7 @@ const emptyForm = {
 
 export default function PostModal({ profile, editingPost, onClose, onSave }) {
   const isAdmin = profile.role === "admin";
+  const isViewer = profile.role === "viewer";
   const isExemptFromH5 = profile.username === "advo"; // sering ada info mendadak, dikecualikan dari H-5
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -67,6 +68,8 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (isViewer) return; // read-only, nggak boleh nyimpen apa-apa
+
     if (!form.title.trim()) {
       alert("Judul postingan wajib diisi ya");
       return;
@@ -81,7 +84,7 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
       }
     }
 
-    if (!isAdmin && !editingPost) {
+    if (!isAdmin && !isViewer && !editingPost) {
       if (!form.post_date) {
         alert("Tanggal posting wajib diisi ya.");
         return;
@@ -108,7 +111,7 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
   return (
     <div className="overlay">
       <div className="modal">
-        <h2>{editingPost ? "Edit Postingan" : isAdmin ? "Tambah Postingan" : "Request Postingan"}</h2>
+        <h2>{isViewer ? "Detail Postingan" : editingPost ? "Edit Postingan" : isAdmin ? "Tambah Postingan" : "Request Postingan"}</h2>
         {isExemptFromH5 && !isAdmin && !editingPost && (
           <p style={{ fontSize: 12, color: "var(--ink-soft)", margin: "-8px 0 14px" }}>
             Bidang Advokasi dikecualikan dari aturan H-5 (buat info mendadak).
@@ -123,12 +126,13 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
               onChange={(e) => set("title", e.target.value)}
               placeholder="misal: Recap Sarasehan Prodi"
               autoFocus
+              disabled={isViewer}
             />
           </div>
           <div className="row2">
             <div className="field">
               <label>Platform</label>
-              <select value={form.platform} onChange={(e) => set("platform", e.target.value)}>
+              <select value={form.platform} onChange={(e) => set("platform", e.target.value)} disabled={isViewer}>
                 <option value="Instagram">Instagram</option>
                 <option value="TikTok">TikTok</option>
                 <option value="YouTube">YouTube</option>
@@ -151,16 +155,16 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
           <div className="row2">
             <div className="field">
               <label>Tanggal Posting</label>
-              <input type="date" value={form.post_date} onChange={(e) => set("post_date", e.target.value)} />
+              <input type="date" value={form.post_date} onChange={(e) => set("post_date", e.target.value)} disabled={isViewer} />
             </div>
             <div className="field">
               <label>Jam Posting</label>
-              <input type="time" value={form.post_time} onChange={(e) => set("post_time", e.target.value)} />
+              <input type="time" value={form.post_time} onChange={(e) => set("post_time", e.target.value)} disabled={isViewer} />
             </div>
           </div>
           <div className="field">
             <label>PIC (Penanggung Jawab)</label>
-            <input type="text" value={form.pic} onChange={(e) => set("pic", e.target.value)} placeholder="misal: Jazuli" />
+            <input type="text" value={form.pic} onChange={(e) => set("pic", e.target.value)} placeholder="misal: Jazuli" disabled={isViewer} />
           </div>
           <div className="field">
             <label>Catatan</label>
@@ -168,6 +172,7 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
               value={form.caption}
               onChange={(e) => set("caption", e.target.value)}
               placeholder="catatan singkat aja (caption lengkap taruh di folder Drive, bagian Link Sumber)"
+              disabled={isViewer}
             />
           </div>
           <div className="field">
@@ -177,6 +182,7 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
               onChange={(e) => set("source_link", e.target.value)}
               placeholder={"https://drive.google.com/drive/folders/..."}
               style={{ minHeight: 56 }}
+              disabled={isViewer}
             />
           </div>
           {isAdmin && form.status === "Ditolak" && (
@@ -221,12 +227,20 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
           )}
 
           <div className="modal-actions">
-            <button type="button" className="btn-ghost" onClick={onClose} disabled={saving} aria-label="Batalkan dan tutup form">
-              Batal
-            </button>
-            <button type="submit" className="btn-primary wide" disabled={saving}>
-              {saving ? "Menyimpan..." : "Simpan"}
-            </button>
+            {isViewer ? (
+              <button type="button" className="btn-primary wide" onClick={onClose} aria-label="Tutup">
+                Tutup
+              </button>
+            ) : (
+              <>
+                <button type="button" className="btn-ghost" onClick={onClose} disabled={saving} aria-label="Batalkan dan tutup form">
+                  Batal
+                </button>
+                <button type="submit" className="btn-primary wide" disabled={saving}>
+                  {saving ? "Menyimpan..." : "Simpan"}
+                </button>
+              </>
+            )}
           </div>
         </form>
       </div>

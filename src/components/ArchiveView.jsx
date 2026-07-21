@@ -2,6 +2,7 @@ import { PLATFORM_COLORS, formatDateShort, canUnarchive } from "../constants";
 
 export default function ArchiveView({ posts, profile, onCardClick, onDelete, onArchive }) {
   const isAdmin = profile.role === "admin";
+  const canOpen = isAdmin || profile.role === "viewer";
 
   const grouped = {};
   posts.forEach((p) => {
@@ -28,8 +29,8 @@ export default function ArchiveView({ posts, profile, onCardClick, onDelete, onA
                 <div
                   key={p.id}
                   className="card"
-                  style={{ borderLeftColor: "#9CA3AF", cursor: isAdmin ? "pointer" : "default" }}
-                  onClick={() => isAdmin && onCardClick(p)}
+                  style={{ borderLeftColor: "#9CA3AF", cursor: canOpen ? "pointer" : "default" }}
+                  onClick={() => canOpen && onCardClick(p)}
                 >
                   {isAdmin && (
                     <button
