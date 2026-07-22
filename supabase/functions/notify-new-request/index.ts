@@ -1,7 +1,9 @@
 // Supabase Edge Function: notify-new-request
-// Dipanggil otomatis oleh Database Webhook tiap ada INSERT atau UPDATE ke tabel `posts`.
+// Dipanggil otomatis oleh Database Webhook tiap ada INSERT, UPDATE, atau DELETE ke tabel `posts`.
 // - INSERT oleh akun bidang -> email "request baru" ke admin.
 // - UPDATE oleh akun bidang (revisi request miliknya) -> email "ada revisi" ke admin.
+// - DELETE oleh akun bidang -> email "request dihapus" ke admin (buat bukti/audit,
+//   soalnya begitu row-nya kehapus, history-nya ikut kehapus juga -- ini jejak terakhir).
 
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -75,14 +77,24 @@ function sourceLinksHtml(sourceLink: string | null) {
   );
 }
 
-function buildEmail(kind: "baru" | "revisi", bidangName: string, recordRaw: any) {
+function buildEmail(kind: "baru" | "revisi" | "hapus", bidangName: string, recordRaw: any) {
   const record = {
     ...recordRaw,
     caption: wrapLongLines(String(recordRaw.caption || "")),
     source_link: wrapLongLines(String(recordRaw.source_link || "")),
   };
 
-  const label = kind === "baru" ? "Request baru masuk" : "Ada revisi pada request";
+  const labelMap = {
+    baru: "Request baru masuk",
+    revisi: "Ada revisi pada request",
+    hapus: "Ada request yang DIHAPUS",
+  };
+  const closingMap = {
+    baru: "Buka Medflow buat ditindaklanjuti.",
+    revisi: "Buka Medflow buat cek perubahannya.",
+    hapus: "Postingan ini udah kehapus dari Medflow (nggak bisa dikembalikan). Email ini jadi bukti/jejak terakhirnya.",
+  };
+  const label = labelMap[kind];
   const subject = `[Medflow] ${label} dari ${bidangName}`;
 
   const textBody = `
@@ -96,7 +108,7 @@ PIC         : ${record.pic || "-"}
 Catatan     : ${record.caption || "-"}
 Link Sumber : ${record.source_link || "-"}
 
-Buka Medflow buat ditindaklanjuti.
+${closingMap[kind]}
 `.trim();
 
   const htmlBody = `
@@ -111,7 +123,7 @@ Buka Medflow buat ditindaklanjuti.
       <tr><td style="color:#6E6892;vertical-align:top;">Catatan</td><td>: ${escapeHtmlMultiline(record.caption || "-")}</td></tr>
       <tr><td style="color:#6E6892;vertical-align:top;">Link Sumber</td><td>: ${sourceLinksHtml(record.source_link)}</td></tr>
     </table>
-    <p style="margin-top:16px;">Buka Medflow buat ditindaklanjuti.</p>
+    <p style="margin-top:16px;">${closingMap[kind]}</p>
   </div>
   `.trim();
 
@@ -139,7 +151,7 @@ Deno.serve(async (req) => {
 
   const payload = await req.json();
   const record = payload.record;
-  const type = payload.type; // "INSERT" | "UPDATE"
+  const type = payload.type; // "INSERT" | "UPDATE" | "DELETE"
 
   try {
     if (type === "INSERT") {
@@ -186,6 +198,40 @@ Deno.serve(async (req) => {
       const { subject, textBody, htmlBody } = buildEmail("revisi", profile.bidang_name, record);
       await sendEmail(subject, textBody, htmlBody);
       return new Response("ok: notif revisi terkirim", { status: 200 });
+    }
+
+    if (type === "DELETE") {
+      const oldRecord = payload.old_record;
+      if (!oldRecord?.id) return new Response("skip: no old record", { status: 200 });
+
+      // posts nggak nyimpen "siapa yang hapus" (row-nya udah nggak ada), jadi ambil
+      // dari deleted_posts_log yang dicatat trigger BEFORE DELETE sesaat sebelumnya.
+      const { data: logEntry } = await supabase
+        .from("deleted_posts_log")
+        .select("deleted_by, deleted_by_name")
+        .eq("original_post_id", oldRecord.id)
+        .order("deleted_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!logEntry?.deleted_by) {
+        return new Response("skip: no deleter info", { status: 200 });
+      }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", logEntry.deleted_by)
+        .single();
+
+      // cuma notif kalau yang hapus itu akun bidang (aksi admin nggak perlu dinotif ke diri sendiri)
+      if (!profile || profile.role !== "bidang") {
+        return new Response("skip: bukan dihapus oleh bidang", { status: 200 });
+      }
+
+      const { subject, textBody, htmlBody } = buildEmail("hapus", logEntry.deleted_by_name, oldRecord);
+      await sendEmail(subject, textBody, htmlBody);
+      return new Response("ok: notif penghapusan terkirim", { status: 200 });
     }
 
     return new Response("skip: event type tidak dikenali", { status: 200 });

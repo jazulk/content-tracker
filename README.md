@@ -63,6 +63,18 @@ Selain webhook lama (Insert), bikin 1 lagi:
 
 Sekarang tiap bidang edit request yang udah mereka submit, admin otomatis dapet email "Ada revisi pada request".
 
+### 3.1 Notif Penghapusan (bukti/audit)
+Run `supabase/migration-delete-notification.sql` di SQL Editor dulu (bikin tabel `deleted_posts_log` + trigger pencatat). Terus bikin 1 webhook lagi:
+1. Dashboard → **Database** → **Webhooks** → **Create a new hook**
+2. Name: `notify-deletion`
+3. Table: `posts`
+4. Events: centang **Delete** aja
+5. Type: **Supabase Edge Functions** → pilih `notify-new-request` (function yang sama)
+6. HTTP Headers: sama, `x-webhook-secret` = value `WEBHOOK_SECRET`
+7. Save
+
+Sekarang tiap bidang hapus request miliknya, admin dapet email "Ada request yang DIHAPUS" — ini jadi bukti terakhir soalnya begitu row-nya kehapus, riwayat perubahannya (`post_history`) ikut kehapus juga.
+
 
 
 ### 1. Siapkan akun Gmail pengirim
