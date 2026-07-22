@@ -3,7 +3,6 @@ dist/
 .env
 .env.local
 supabase/seed-users.js
-reset-password.js
 update-account.js
 manage-account.js
 supabase/.temp/

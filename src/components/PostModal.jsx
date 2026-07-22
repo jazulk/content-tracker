@@ -20,6 +20,7 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
   const isExemptFromH5 = profile.username === "advo"; // sering ada info mendadak, dikecualikan dari H-5
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState(null);
   const [history, setHistory] = useState([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -42,6 +43,7 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
     }
     setHistory([]);
     setHistoryOpen(false);
+    setFormError(null);
   }, [editingPost]);
 
   async function loadHistory() {
@@ -64,14 +66,16 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
 
   function set(key, val) {
     setForm((f) => ({ ...f, [key]: val }));
+    setFormError(null);
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     if (isViewer) return; // read-only, nggak boleh nyimpen apa-apa
+    setFormError(null);
 
     if (!form.title.trim()) {
-      alert("Judul postingan wajib diisi ya");
+      setFormError("Judul postingan wajib diisi ya.");
       return;
     }
 
@@ -79,14 +83,14 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
       const [h, m] = form.post_time.split(":").map(Number);
       const minutes = h * 60 + m;
       if (minutes < 8 * 60 || minutes > 21 * 60) {
-        alert("Jam posting harus di antara 08:00 - 21:00 WIB.");
+        setFormError("Jam posting harus di antara 08:00 - 21:00 WIB.");
         return;
       }
     }
 
     if (!isAdmin && !isViewer && !editingPost) {
       if (!form.post_date) {
-        alert("Tanggal posting wajib diisi ya.");
+        setFormError("Tanggal posting wajib diisi ya.");
         return;
       }
       if (!isExemptFromH5) {
@@ -95,7 +99,7 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
         minDate.setDate(minDate.getDate() + 5);
         const chosenDate = new Date(form.post_date + "T00:00:00");
         if (chosenDate < minDate) {
-          alert("Request cuma bisa diajukan minimal H-5 dari tanggal posting.");
+          setFormError("Request cuma bisa diajukan minimal H-5 dari tanggal posting.");
           return;
         }
       }
@@ -225,6 +229,8 @@ export default function PostModal({ profile, editingPost, onClose, onSave }) {
               )}
             </div>
           )}
+
+          {formError && <div className="form-error">{formError}</div>}
 
           <div className="modal-actions">
             {isViewer ? (

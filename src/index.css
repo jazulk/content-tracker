@@ -121,6 +121,7 @@ h1.pagetitle{font-size:28px;margin:0;font-weight:800;}
 .btn-danger{background:var(--coral);color:#fff;border:none;border-radius:12px;padding:10px 16px;font-weight:700;font-size:13.5px;cursor:pointer;}
 .btn-danger.wide{flex:2;}
 .loading-note{text-align:center;color:var(--ink-soft);font-size:13px;padding:40px 0;}
+.form-error{background:#FFF0F0;color:#C0392B;border:1.5px solid #FFCDCD;border-radius:10px;padding:10px 14px;font-size:12.5px;font-weight:600;margin-top:4px;line-height:1.5;}
 
 /* ---------- Empty state (no search/filter results) ---------- */
 .empty-state{text-align:center;padding:50px 20px;background:var(--card);border-radius:20px;color:var(--ink-soft);}
