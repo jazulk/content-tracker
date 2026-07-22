@@ -1,4 +1,4 @@
-import { STATUSES, PLATFORM_COLORS, formatDateShort, isOverdue, sortByPostDate, isArchived } from "../constants";
+import { STATUSES, PLATFORM_COLORS, formatDateShort, isOverdue, sortByPostDate, isArchived, ownerCanDelete } from "../constants";
 
 export default function Board({ posts, profile, onCardClick, onDelete, onDropStatus, onArchive }) {
   const isAdmin = profile.role === "admin";
@@ -44,6 +44,7 @@ export default function Board({ posts, profile, onCardClick, onDelete, onDropSta
                   const isOwner = p.requested_by === profile.id;
                   const canModify = isAdmin || isOwner;
                   const canOpen = canModify || profile.role === "viewer";
+                  const canDelete = ownerCanDelete(p, profile);
                   const overdue = isOverdue(p);
                   return (
                     <div
@@ -59,7 +60,7 @@ export default function Board({ posts, profile, onCardClick, onDelete, onDropSta
                           TERLAMBAT
                         </div>
                       )}
-                      {canModify && (
+                      {canDelete && (
                         <button
                           className="del-btn"
                           onClick={(e) => {

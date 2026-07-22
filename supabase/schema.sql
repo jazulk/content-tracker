@@ -66,29 +66,33 @@ create policy "posts_insert_admin_or_bidang"
     exists (select 1 from profiles p where p.id = auth.uid() and p.role in ('admin','bidang'))
   );
 
--- Admin boleh update semua. Bidang boleh update HANYA postingan miliknya sendiri
--- (status tetap dikunci lewat trigger di bawah, terlepas dari policy ini).
+-- Admin boleh update semua. Bidang boleh update HANYA postingan miliknya sendiri,
+-- dan cuma kalau status masih "Request" atau "On Progress" (status tetap dikunci
+-- lewat trigger di bawah, terlepas dari policy ini).
 drop policy if exists "posts_update_admin_only" on posts;
+drop policy if exists "posts_update_own_or_admin" on posts;
 create policy "posts_update_own_or_admin"
   on posts for update
   to authenticated
   using (
     exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin')
-    or requested_by = auth.uid()
+    or (requested_by = auth.uid() and status in ('Request','On Progress'))
   )
   with check (
     exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin')
-    or requested_by = auth.uid()
+    or (requested_by = auth.uid() and status in ('Request','On Progress'))
   );
 
--- Admin boleh delete semua. Bidang boleh delete HANYA postingan miliknya sendiri.
+-- Admin boleh delete semua. Bidang boleh delete HANYA postingan miliknya sendiri,
+-- dan cuma kalau status masih "Request" atau "Ditolak".
 drop policy if exists "posts_delete_admin_only" on posts;
+drop policy if exists "posts_delete_own_or_admin" on posts;
 create policy "posts_delete_own_or_admin"
   on posts for delete
   to authenticated
   using (
     exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin')
-    or requested_by = auth.uid()
+    or (requested_by = auth.uid() and status in ('Request','Ditolak'))
   );
 
 -- ---------- TRIGGER: kunci requested_by & status saat insert ----------

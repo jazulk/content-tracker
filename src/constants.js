@@ -41,6 +41,21 @@ export function isOverdue(post) {
   return postDate < today;
 }
 
+// Bidang cuma boleh edit/hapus postingan MEREKA sendiri, dan cuma di jendela status tertentu.
+// Di luar itu (Siap Posting, Sudah Diposting), cuma admin yang bisa ubah/hapus.
+export const OWNER_EDIT_STATUSES = ["Request", "On Progress"];
+export const OWNER_DELETE_STATUSES = ["Request", "Ditolak"];
+
+export function ownerCanEdit(post, profile) {
+  if (profile.role === "admin") return true;
+  return post.requested_by === profile.id && OWNER_EDIT_STATUSES.includes(post.status);
+}
+
+export function ownerCanDelete(post, profile) {
+  if (profile.role === "admin") return true;
+  return post.requested_by === profile.id && OWNER_DELETE_STATUSES.includes(post.status);
+}
+
 export function sortByPostDate(posts) {
   return [...posts].sort((a, b) => {
     if (!a.post_date && !b.post_date) return 0;
